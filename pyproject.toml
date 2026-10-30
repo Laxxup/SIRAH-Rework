@@ -1,0 +1,48 @@
+[project]
+name = "sirah"
+version = "0.1.0"
+description = "S.I.R.A.H. — robot conversacional con ojos animatrónicos"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "httpx>=0.27,<1",
+    "pyserial>=3.5,<4",
+]
+
+[project.optional-dependencies]
+voice = [
+    "piper-tts>=1.8,<2",
+    "webrtcvad-wheels>=2.0.14,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3,<10",
+    "ruff>=0.8,<1",
+]
+
+[project.scripts]
+sirah = "sirah.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sirah"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "hardware: requiere BENCH_PORT y una placa de banco; se salta sin ella",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["docs", "firmware", "models", "bench"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

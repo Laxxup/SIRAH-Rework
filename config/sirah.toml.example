@@ -1,0 +1,16 @@
+# Configuración local de SIRAH (sin secretos).
+# `sirah setup` crea config/sirah.toml a partir de este archivo.
+# Las rutas relativas se resuelven desde la raíz del proyecto.
+
+[persona]
+# Tarjeta activa (Character Card v2/v3 o tarjeta antigua sin spec).
+active = "config/persona/sirah.json"
+# Idioma de la conversación: es, en, pt...
+language = "es"
+# card = manda la tarjeta (por defecto; "personaje" es alias).
+# robot = modo estricto opcional; fuerza el contrato de robot.
+# identity = "card"
+
+# Cambia el modo solo para una tarjeta concreta; la clave es su nombre de archivo.
+# [persona.cards."ashley.json"]
+# identity = "card"

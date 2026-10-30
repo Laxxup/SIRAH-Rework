@@ -1,0 +1,32 @@
+# Secretos y entorno local
+.env
+.env.*
+!.env.example
+
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Tarjetas de personaje locales: solo la de SIRAH se versiona
+config/persona/*.json
+!config/persona/sirah.json
+# Configuración local de persona (se crea desde el example)
+config/sirah.toml
+
+# Herramientas
+.pytest_cache/
+.ruff_cache/
+.superpowers/
+.opencode/
+opencode.json
+
+# Datos generados
+models/voices/
+*.log
+
+# Exportación local de la sesión (no es parte del proyecto)
+HISTORIA.md
