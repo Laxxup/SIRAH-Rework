@@ -31,6 +31,12 @@ def _canonical_identity(value: str) -> str:
     return _CANONICAL_IDENTITY.get(value.strip().lower(), "card")
 
 
+def is_groq_url(base: str) -> bool:
+    """True si la URL base apunta al host de Groq (y no a uno parecido)."""
+    host = urlparse(base).hostname or ""
+    return host == "groq.com" or host.endswith(".groq.com")
+
+
 class ConfigError(Exception):
     """Error de configuración con un mensaje que el usuario puede accionar."""
 
@@ -236,8 +242,7 @@ class Config:
         """Clave de Groq; si el LLM ya es Groq, se reutiliza su clave."""
         if self.groq_api_key:
             return self.groq_api_key
-        host = urlparse(self.llm_base_url).hostname or ""
-        if host == "groq.com" or host.endswith(".groq.com"):
+        if is_groq_url(self.llm_base_url):
             return self.llm_api_key
         return ""
 

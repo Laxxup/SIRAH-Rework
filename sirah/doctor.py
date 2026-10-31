@@ -568,7 +568,27 @@ def _probe(command: list[str], device: str, timeout: float) -> tuple[str | None,
 def resolve_player(config: Config, *, timeout: float = 3.0) -> PlayerChoice:
     """Elige reproductor: respeta el fijado y, si no, cae de aplay a PipeWire."""
     if config.audio_player_command_set:
-        return PlayerChoice(tuple(shlex.split(config.audio_player_command)))
+        try:
+            command = shlex.split(config.audio_player_command)
+        except ValueError as exc:
+            return PlayerChoice(
+                None,
+                f"AUDIO_PLAYER_COMMAND no se puede leer: {exc}. "
+                "Solución: corrige las comillas en .env.",
+            )
+        if not command:
+            return PlayerChoice(
+                None,
+                "AUDIO_PLAYER_COMMAND está vacío. Solución: escribe el comando "
+                "del reproductor (por ejemplo, aplay) o borra la variable.",
+            )
+        if shutil.which(command[0]) is None:
+            return PlayerChoice(
+                None,
+                f"AUDIO_PLAYER_COMMAND apunta a {command[0]!r}, que no existe. "
+                "Solución: instálalo o corrige la ruta en .env.",
+            )
+        return PlayerChoice(tuple(command))
     if shutil.which("aplay") is None:
         problem = "aplay no está disponible"
     else:

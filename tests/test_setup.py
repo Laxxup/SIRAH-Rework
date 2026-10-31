@@ -7,9 +7,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from sirah.config import is_groq_url
 from sirah.setup_wizard import (
     SetupError,
-    _is_groq,
     _serial_candidates,
     download_voice,
     ensure_settings_file,
@@ -142,10 +142,13 @@ def _patch_setup(monkeypatch, tmp_path, env_content="", ask_overrides=None):
     return env_file, captured
 
 
-def test_is_groq_hostname() -> None:
-    assert _is_groq("https://api.groq.com/openai/v1") is True
-    assert _is_groq("https://groq.com.evil.example/v1") is False
-    assert _is_groq("") is False
+def test_is_groq_url_hostname() -> None:
+    assert is_groq_url("https://api.groq.com/openai/v1") is True
+    assert is_groq_url("https://groq.com/openai/v1") is True
+    assert is_groq_url("https://notgroq.com/v1") is False
+    assert is_groq_url("https://evilgroq.com/v1") is False
+    assert is_groq_url("https://groq.com.evil.example/v1") is False
+    assert is_groq_url("") is False
 
 
 def test_setup_does_not_override_base_url_with_opencode(monkeypatch, tmp_path: Path) -> None:

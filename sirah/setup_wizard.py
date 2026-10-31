@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
 
 import httpx
 from serial.tools import list_ports
@@ -17,6 +16,7 @@ from serial.tools import list_ports
 from sirah.config import (
     PROJECT_ROOT,
     ConfigError,
+    is_groq_url,
     mask_secret,
     read_env_file,
     update_env_file,
@@ -134,11 +134,6 @@ def detect_serial_ports() -> list[tuple[str, str]]:
 
 def detect_cameras() -> list[str]:
     return sorted(str(path) for path in Path("/dev").glob("video*") if path.is_char_device())
-
-
-def _is_groq(base: str) -> bool:
-    """True si la URL base apunta al host de Groq."""
-    return (urlparse(base).hostname or "").endswith("groq.com")
 
 
 def _print_alsa() -> None:
@@ -316,7 +311,7 @@ def run_setup(env_file: Path | None = None) -> int:
 
     # 4. Voz
     print("\nVoz (Groq + Piper)")
-    is_groq = _is_groq(base)
+    is_groq = is_groq_url(base)
     has_stt_key = bool(current.get("GROQ_API_KEY", "").strip()) or (is_groq and bool(effective_key))
     want_voice = _ask_yes_no("¿Preparar la voz ahora?", not has_stt_key)
     if want_voice and not has_stt_key:

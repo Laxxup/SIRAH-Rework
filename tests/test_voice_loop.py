@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from sirah.adapters.llm import LLMError
 from sirah.config import load_config
 from sirah.core.persona import Persona
 from sirah.core.voice import (
@@ -120,12 +121,31 @@ class FlakyTTS(FakeTTS):
             raise VoiceError("Piper no devolvió audio. Solución: revisa TTS_MODEL.")
 
 
+class FailingAgent:
+    def __init__(self, chunks: list[str]) -> None:
+        self.chunks = chunks
+
+    async def respond(self, text: str, on_actions=None):
+        for chunk in self.chunks:
+            yield chunk
+        raise LLMError("sin red")
+
+
+class FakeHistory:
+    def __init__(self) -> None:
+        self.items: list[tuple[str, str]] = []
+
+    def append(self, role: str, content: str) -> None:
+        self.items.append((role, content))
+
+
 def _loop(
     mic: FakeMic,
     stt: FakeSTT,
     tts: FakeTTS,
     agent: FakeAgent,
     output: list[str],
+    history: FakeHistory | None = None,
 ) -> VoiceLoop:
     segmenter = VoiceSegmenter(
         lambda frame: frame == TONE,
@@ -140,6 +160,7 @@ def _loop(
         mic=mic,
         stt=stt,
         tts=tts,
+        history=history,
         segmenter=segmenter,
         write=output.append,
     )
@@ -160,6 +181,47 @@ def test_one_turn_keeps_the_mic_off_while_speaking() -> None:
     assert stt.audios and stt.audios[0].startswith(b"RIFF")
     assert "tú> hola" in "".join(output)
     assert loop.supervisor.state is State.IDLE
+
+
+def test_empty_llm_response_shows_a_warning_in_voice() -> None:
+    mic = FakeMic()
+    tts = FakeTTS(mic)
+    output: list[str] = []
+    loop = _loop(mic, FakeSTT([]), tts, FakeAgent([]), output)
+
+    asyncio.run(loop._respond("hola"))
+
+    assert "[AVISO] El LLM no devolvió texto" in "".join(output)
+    assert tts.phrases == []
+
+
+def test_length_cut_response_shows_a_warning_in_voice() -> None:
+    mic = FakeMic()
+    tts = FakeTTS(mic)
+    output: list[str] = []
+    agent = FakeAgent(["Una respuesta"])
+    agent.llm = SimpleNamespace(last_finish_reason="length", max_tokens=512)
+    loop = _loop(mic, FakeSTT([]), tts, agent, output)
+
+    asyncio.run(loop._respond("hola"))
+
+    assert "LLM_MAX_TOKENS=512" in "".join(output)
+
+
+def test_llm_error_does_not_add_an_empty_warning_or_history() -> None:
+    for chunks in ([], ["parcial"]):
+        mic = FakeMic()
+        tts = FakeTTS(mic)
+        output: list[str] = []
+        history = FakeHistory()
+        loop = _loop(mic, FakeSTT([]), tts, FailingAgent(chunks), output, history)
+
+        asyncio.run(loop._respond("hola"))
+
+        text = "".join(output)
+        assert "[FALLA] sin red" in text
+        assert "no devolvió texto" not in text
+        assert history.items == []
 
 
 def test_empty_transcriptions_are_ignored() -> None:
@@ -364,6 +426,7 @@ def test_run_voice_uses_the_configured_player(tmp_path: Path, monkeypatch) -> No
 
     monkeypatch.setattr("sirah.voice.PiperTTS", fake_tts)
     monkeypatch.setattr("sirah.voice._prerequisites", lambda config: [])
+    monkeypatch.setattr("sirah.doctor.shutil.which", lambda tool: f"/usr/bin/{tool}")
     config = load_config(
         env_file=tmp_path / "missing.env",
         environ={"LLM_API_KEY": "k", "AUDIO_PLAYER_COMMAND": "paplay --volume=30000"},

@@ -28,7 +28,7 @@ from sirah.core.voice import (
 )
 from sirah.doctor import alsa_cards, find_piper, resolve_player
 from sirah.session import build_agent, opening_greeting
-from sirah.terminal import _stdout, run_terminal
+from sirah.terminal import _stdout, _token_warning, run_terminal
 
 logger = logging.getLogger("sirah.voice")
 
@@ -174,6 +174,7 @@ class VoiceLoop:
         speaker = asyncio.create_task(speak())
         buffer = PhraseBuffer()
         pieces: list[str] = []
+        failed = False
         self.write(f"{self.persona.display_name}> ")
         try:
             async for chunk in self.agent.respond(text, on_actions=self.supervisor.actions):
@@ -182,8 +183,10 @@ class VoiceLoop:
                 for phrase in buffer.feed(chunk):
                     queue.put_nowait(phrase)
         except LLMError as exc:
+            failed = True
             self.write(f"\n[FALLA] {exc}\n")
         except Exception:
+            failed = True
             logger.exception("Fallo inesperado durante el turno de voz")
             self.write("\n[FALLA] Algo falló al procesar el turno. Revisa el log.\n")
         finally:
@@ -193,8 +196,20 @@ class VoiceLoop:
         self.write("\n")
         await speaker
 
+        if not failed:
+            llm = getattr(self.agent, "llm", None)
+            max_tokens = getattr(llm, "max_tokens", 1024)
+            truncated = getattr(llm, "last_finish_reason", None) == "length"
+            if truncated:
+                self.write(_token_warning(max_tokens))
+            elif not pieces:
+                self.write(
+                    "[AVISO] El LLM no devolvió texto. Si se repite, "
+                    f"revisa LLM_MAX_TOKENS ({max_tokens}) y el log.\n"
+                )
+
         answer = "".join(pieces).strip()
-        if answer and self.history is not None:
+        if not failed and answer and self.history is not None:
             self.history.append("user", text)
             self.history.append("assistant", answer)
 

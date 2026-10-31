@@ -55,10 +55,10 @@ def _log_actions(actions: tuple[Action, ...]) -> None:
     logger.debug("Acciones ignoradas (ojos en el hito 2): %s", actions)
 
 
-def _token_warning(config: Config) -> str:
+def _token_warning(max_tokens: int) -> str:
     return (
         "[AVISO] La respuesta se cortó por el límite de tokens "
-        f"(LLM_MAX_TOKENS={config.llm_max_tokens}). "
+        f"(LLM_MAX_TOKENS={max_tokens}). "
         'Puedes pedir "continúa" o subir el valor en .env.\n'
     )
 
@@ -140,7 +140,7 @@ async def run_terminal(
         truncated = getattr(agent.llm, "last_finish_reason", None) == "length"
         if not pieces:
             if truncated:
-                write(f"\n{_token_warning(config)}")
+                write(f"\n{_token_warning(config.llm_max_tokens)}")
             else:
                 write(
                     "\n[AVISO] El LLM no devolvió texto. Si se repite, "
@@ -150,7 +150,7 @@ async def run_terminal(
 
         write("\n")
         if truncated:
-            write(_token_warning(config))
+            write(_token_warning(config.llm_max_tokens))
         answer = "".join(pieces).strip()
         if answer and history is not None:
             history.append("user", text)

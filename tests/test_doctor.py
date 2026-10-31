@@ -342,6 +342,7 @@ def test_player_autoselection_uses_pw_play_when_paplay_is_missing(
 
 def test_explicit_player_is_used_without_probing(tmp_path: Path, monkeypatch) -> None:
     config = _config(tmp_path, AUDIO_PLAYER_COMMAND="paplay --volume=30000")
+    monkeypatch.setattr("sirah.doctor.shutil.which", lambda tool: f"/usr/bin/{tool}")
     monkeypatch.setattr(
         "sirah.doctor._run_player",
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no debe probar")),
@@ -351,6 +352,16 @@ def test_explicit_player_is_used_without_probing(tmp_path: Path, monkeypatch) ->
 
     assert choice.command == ("paplay", "--volume=30000")
     assert choice.message == ""
+
+
+def test_explicit_player_with_bad_command_reports_a_solution(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("sirah.doctor.shutil.which", lambda tool: None)
+
+    for value in ("aplay 'unclosed", "definitely-not-a-player --x"):
+        choice = resolve_player(_config(tmp_path, AUDIO_PLAYER_COMMAND=value))
+
+        assert choice.command is None
+        assert "Solución:" in choice.message
 
 
 def test_player_autoselection_fails_when_nothing_plays(tmp_path: Path, monkeypatch) -> None:
