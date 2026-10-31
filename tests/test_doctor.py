@@ -248,6 +248,41 @@ def test_doctor_audio_reports_a_hung_player(tmp_path: Path, monkeypatch) -> None
     assert "pipewire" in (result.fix or "").lower()
 
 
+def test_doctor_audio_accepts_paplay_without_aplay(tmp_path: Path, monkeypatch) -> None:
+    config = _config(tmp_path)
+    monkeypatch.setattr(
+        "sirah.doctor.shutil.which",
+        lambda tool: None if tool == "aplay" else f"/usr/bin/{tool}",
+    )
+    monkeypatch.setattr("sirah.doctor.alsa_cards", lambda tool: 1)
+    monkeypatch.setattr("sirah.doctor.importlib.util.find_spec", lambda name: object())
+    monkeypatch.setattr("sirah.doctor._run_player", lambda *a, **k: (0, b""))
+
+    result = _check_audio(config)
+
+    assert result.status == "ok"
+    assert "paplay" in result.detail
+    assert "0 de reproducción" not in result.detail
+
+
+def test_doctor_voice_accepts_paplay_without_aplay(tmp_path: Path, monkeypatch) -> None:
+    model = tmp_path / "voz.onnx"
+    model.write_bytes(b"x")
+    model.with_name("voz.onnx.json").write_bytes(b"{}")
+    config = _config(tmp_path, GROQ_API_KEY="k", TTS_MODEL=str(model))
+    monkeypatch.setattr(
+        "sirah.doctor.shutil.which",
+        lambda tool: None if tool == "aplay" else f"/usr/bin/{tool}",
+    )
+    monkeypatch.setattr("sirah.doctor.find_piper", lambda: Path("/piper/__init__.py"))
+    monkeypatch.setattr("sirah.doctor._run_player", lambda *a, **k: (0, b""))
+
+    result = _check_voice(config)
+
+    assert result.status == "ok"
+    assert "paplay" in result.detail
+
+
 def test_doctor_reports_vad_floor_and_thresholds(tmp_path: Path, monkeypatch) -> None:
     config = _config(tmp_path)
     noise = array("h", [1500] * 320).tobytes() * 50
@@ -265,6 +300,23 @@ def test_doctor_reports_vad_floor_and_thresholds(tmp_path: Path, monkeypatch) ->
     assert result.status == "ok"
     assert "suelo 1500" in result.detail
     assert "inicio 2400" in result.detail and "fin 1800" in result.detail
+
+
+def test_doctor_vad_warns_when_the_microphone_captures_nothing(tmp_path: Path, monkeypatch) -> None:
+    config = _config(tmp_path)
+
+    class Done:
+        returncode = 0
+        stdout = b"\x00" * 32000
+        stderr = b""
+
+    monkeypatch.setattr("sirah.doctor.shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr("sirah.doctor.subprocess.run", lambda *a, **k: Done())
+
+    result = _check_vad(config)
+
+    assert result.status == "warn"
+    assert "no capta nada" in result.detail
 
 
 def test_doctor_vad_warns_when_arecord_fails(tmp_path: Path, monkeypatch) -> None:

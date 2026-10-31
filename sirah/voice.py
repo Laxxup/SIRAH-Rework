@@ -360,7 +360,7 @@ async def run_check(
     mic: ArecordMicrophone | None = None,
 ) -> int:
     mic = mic or ArecordMicrophone(device=config.audio_input_device)
-    write("Grabando 3 segundos...\n")
+    write("Grabando 3 segundos... No hables durante el primer segundo.\n")
     try:
         frames = await mic.record(3.0)
     except VoiceError as exc:
@@ -372,6 +372,8 @@ async def run_check(
     levels = [rms(frame) for frame in frames]
     average = sum(levels) / len(levels) if levels else 0.0
     peak = max(levels, default=0.0)
+    first_second = levels[: 1000 // FRAME_MS]
+    quiet = not first_second or any(level < config.vad_min_start_rms for level in first_second)
     detector = AdaptiveSpeechDetector(
         noise_calibration_ms=config.vad_noise_calibration_ms,
         start_multiple=config.vad_start_multiple,
@@ -403,6 +405,14 @@ async def run_check(
             "hay silencio que el VAD pueda distinguir. Baja la ganancia de captura "
             "(`alsamixer -c 0`) o elige otro dispositivo con AUDIO_INPUT_DEVICE.\n"
         )
+    if not quiet:
+        write(
+            "[AVISO] No hubo silencio en el primer segundo, así que la calibración "
+            "puede ser incorrecta. Repite `sirah voice --check` sin hablar durante "
+            "el primer segundo.\n"
+        )
+    elif average > 8000:
+        pass  # Ya se avisó de la saturación.
     elif floor > 2000:
         pass  # El aviso del suelo ya dice qué hacer.
     elif voiced:

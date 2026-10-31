@@ -32,7 +32,7 @@ from sirah.config import (
 )
 from sirah.core.health import Health
 from sirah.core.persona import PersonaError, load_persona
-from sirah.core.voice import FRAME_BYTES, SAMPLE_RATE, AdaptiveSpeechDetector, wav_bytes
+from sirah.core.voice import FRAME_BYTES, SAMPLE_RATE, AdaptiveSpeechDetector, rms, wav_bytes
 
 _CALIBRATION = PROJECT_ROOT / "config" / "eyes-calibration.toml"
 _SERVO_KEYS = {
@@ -639,19 +639,20 @@ def _check_audio(config: Config) -> Health:
         )
     player = Path(choice.command[0]).name
     inputs = alsa_cards("arecord")
-    outputs = alsa_cards("aplay") if shutil.which("aplay") else 0
-    if not inputs or not outputs:
+    outputs = alsa_cards("aplay") if shutil.which("aplay") else None
+    output_detail = f"{outputs} salida(s)" if outputs else f"salida vía {player}"
+    if not inputs or (player == "aplay" and not outputs):
         return Health(
             "Audio",
             "warn",
-            f"{inputs} tarjeta(s) de captura y {outputs} de reproducción",
+            f"{inputs} tarjeta(s) de captura y {outputs or 0} de reproducción",
             "Conecta micrófono/altavoz y revisa `arecord -l` y `aplay -l`.",
         )
     if importlib.util.find_spec("webrtcvad") is None:
         return Health(
             "Audio",
             "warn",
-            f"{inputs} captura(s), {outputs} salida(s); falta el VAD",
+            f"{inputs} captura(s), {output_detail}; falta el VAD",
             "Instala las dependencias de voz con `uv sync --all-extras`.",
         )
     devices = []
@@ -660,14 +661,9 @@ def _check_audio(config: Config) -> Health:
     if config.audio_output_device:
         devices.append(f"salida={config.audio_output_device}")
     suffix = f" · {' · '.join(devices)}" if devices else " · dispositivos por defecto"
-    detail = f"{inputs} captura(s), {outputs} salida(s) · reproductor {player}{suffix}"
+    detail = f"{inputs} captura(s), {output_detail} · reproductor {player}{suffix}"
     if choice.message:
-        return Health(
-            "Audio",
-            "warn",
-            f"{detail} · {choice.message}",
-            "Fija el reproductor elegido en AUDIO_PLAYER_COMMAND.",
-        )
+        detail = f"{detail} · {choice.message}"
     return Health("Audio", "ok", detail)
 
 
@@ -760,6 +756,13 @@ def _check_vad(config: Config) -> Health:
             "arecord no devolvió audio",
             "Revisa el micrófono y el volumen de captura (`alsamixer`).",
         )
+    if all(rms(frame) == 0 for frame in frames):
+        return Health(
+            "VAD",
+            "warn",
+            "el micrófono no capta nada (todas las muestras son cero)",
+            "Revisa AUDIO_INPUT_DEVICE, que no esté silenciado y `arecord -l`.",
+        )
     detector = AdaptiveSpeechDetector(
         noise_calibration_ms=config.vad_noise_calibration_ms,
         start_multiple=config.vad_start_multiple,
@@ -790,9 +793,15 @@ def _check_voice(config: Config) -> Health:
     missing: list[str] = []
     if not config.stt_api_key:
         missing.append("GROQ_API_KEY")
-    for tool in ("arecord", "aplay"):
-        if shutil.which(tool) is None:
-            missing.append(tool)
+    if shutil.which("arecord") is None:
+        missing.append("arecord")
+    player = None
+    if not missing:
+        choice = resolve_player(config)
+        if choice.command is None:
+            missing.append("reproductor de audio")
+        else:
+            player = Path(choice.command[0]).name
     if find_piper() is None:
         missing.append("piper")
     model = config.tts_model
@@ -813,7 +822,7 @@ def _check_voice(config: Config) -> Health:
     return Health(
         "Voz",
         "ok",
-        f"arecord y reproductor listos · {config.stt_model} · {config.stt_language} · "
+        f"arecord y {player} listos · {config.stt_model} · {config.stt_language} · "
         f"clave {mask_secret(key)}{origin} · {cloud}",
     )
 

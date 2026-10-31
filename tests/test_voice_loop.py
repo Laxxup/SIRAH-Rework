@@ -561,6 +561,39 @@ def test_check_high_floor_does_not_ask_to_raise_the_minimum(tmp_path: Path) -> N
     assert "sube VAD_MIN_START_RMS" not in "".join(output)
 
 
+def test_check_does_not_blame_the_user_without_silence_in_the_first_second(
+    tmp_path: Path,
+) -> None:
+    mic = FakeMic()
+    mic.turns = [[_level(2000)] * 150]
+    config = load_config(env_file=tmp_path / "missing.env", environ={"LLM_API_KEY": "k"})
+    output: list[str] = []
+
+    asyncio.run(run_check(config, write=output.append, mic=mic))
+
+    text = "".join(output)
+    assert "No hables durante el primer segundo" in text
+    assert "No hubo silencio" in text
+    assert "acércate al micrófono" not in text
+
+
+def test_check_without_audio_does_not_claim_there_was_no_silence(tmp_path: Path) -> None:
+    class EmptyMic(FakeMic):
+        async def record(self, seconds: float = 3.0) -> list[bytes]:
+            await self.start()
+            await self.stop()
+            return []
+
+    config = load_config(env_file=tmp_path / "missing.env", environ={"LLM_API_KEY": "k"})
+    output: list[str] = []
+
+    asyncio.run(run_check(config, write=output.append, mic=EmptyMic()))
+
+    text = "".join(output)
+    assert "No hubo silencio" not in text
+    assert "acércate al micrófono" in text
+
+
 def _real_loop(mic: FakeMic, output: list[str]) -> VoiceLoop:
     segmenter = VoiceSegmenter(
         AdaptiveSpeechDetector(),
