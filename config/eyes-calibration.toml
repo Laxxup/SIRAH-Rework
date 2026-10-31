@@ -1,0 +1,51 @@
+# Calibración canónica de ojos SIRAH.
+# ÚNICA fuente física válida. No duplicar estos números en otros archivos.
+# Generar firmware/sirah/calibration.h con: python3 scripts/generate_eyes_calibration.py
+# No crear parser TOML dentro del ESP32.
+
+[pwm]
+frequency_hz = 50
+pulse_0_us = 1000
+pulse_180_us = 2000
+
+[channels]
+X = 0
+Y = 1
+SD = 2
+ID = 3
+SI = 4
+II = 5
+
+[servo.X]
+right = 60
+center = 120
+left = 180
+
+[servo.Y]
+down = 15
+center = 30
+up = 60
+
+[servo.SD]
+open = 110
+closed = 15
+
+[servo.ID]
+open = 120
+closed = 180
+
+[servo.SI]
+open = 50
+closed = 145
+
+[servo.II]
+open = 110
+closed = 50
+
+[boot]
+X = 120
+Y = 30
+SD = 110
+ID = 120
+SI = 50
+II = 110
