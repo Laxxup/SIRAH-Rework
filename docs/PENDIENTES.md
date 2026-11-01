@@ -51,6 +51,13 @@ dar por buenas. No marcar como resuelto sin evidencia.
 - [ ] Probar reconexión física del USB con SIRAH corriendo.
 - [ ] Prueba de resistencia de 30 minutos.
 - [ ] Confirmar cámara, micrófono y altavoz reales.
+- [ ] **El VAD se recupera tras un ruido constante** (requiere micrófono real).
+  1. Ejecuta `uv run sirah voice`.
+  2. Mantén un ruido constante por encima del umbral (ventilador o un tono)
+     hasta que aparezca `[AVISO] ruido constante: baja la ganancia...`.
+  3. Habla con normalidad: el siguiente turno debe transcribirse sin reiniciar.
+  4. Repite el ruido y vuelve a hablar para confirmar que se recupera otra vez.
+  No marcar como validado hasta que el dueño lo confirme.
 
 ## Entorno de desarrollo
 

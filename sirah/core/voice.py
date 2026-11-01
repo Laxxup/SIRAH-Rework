@@ -152,6 +152,11 @@ class AdaptiveSpeechDetector:
             self._pending_calibration = True
             self._samples = []
 
+    def recalibrate(self) -> None:
+        """Olvida el suelo y vuelve a medirlo tras descartar ruido constante."""
+        self.noise_floor = None
+        self.start_session()
+
     def _calibrate(self) -> None:
         ranked = sorted(self._samples)
         self._samples = []
@@ -276,6 +281,8 @@ class VoiceSegmenter:
         self.reset()
         if constant_noise:
             self.last_discard = "noise"
+            if hasattr(self.detector, "recalibrate"):
+                self.detector.recalibrate()  # type: ignore[union-attr]
             return None
         if voiced_frames * FRAME_MS < _MIN_VOICE_MS:
             logger.debug(

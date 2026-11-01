@@ -224,6 +224,29 @@ def test_segmenter_discards_a_constant_noise_turn() -> None:
     assert segmenter.last_discard == "noise"
 
 
+def test_segmenter_recalibrates_after_a_constant_noise_turn() -> None:
+    detector = AdaptiveSpeechDetector()
+    for _ in range(10 + 25):
+        detector(SILENCE)
+    assert detector.noise_floor == 0
+    segmenter = VoiceSegmenter(
+        detector, start_frames=1, silence_ms=400, prebuffer_ms=0, max_turn_ms=100
+    )
+
+    for _ in range(6):
+        assert segmenter.feed(_level(1500)) is None
+
+    assert segmenter.last_discard == "noise"
+    assert detector._speaking is False
+    assert detector.noise_floor is None
+    assert detector._samples == []
+
+    for _ in range(10 + 25):
+        detector(_level(1500))
+    assert detector.noise_floor == 1500
+    assert detector._speaking is False
+
+
 def test_segmenter_reports_a_short_turn(caplog) -> None:
     segmenter = VoiceSegmenter(
         _detector, start_frames=2, silence_ms=20, prebuffer_ms=20, max_turn_ms=1000
