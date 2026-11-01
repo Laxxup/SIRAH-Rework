@@ -484,8 +484,11 @@ hardware.
 | 7 | Panel web local, sin build de frontend | El equipo configura y arranca desde el navegador; SIRAH funciona sin panel |
 | 8 | Versiones, `update` con reversión, servicio systemd, `DESPLIEGUE.md` | Actualizar, revertir y sobrevivir a un reinicio |
 
-Los hitos 0, 1 y 4 están implementados y cubiertos por tests simulados. **No se
-dan por validados** hasta que el equipo complete las pruebas manuales de
+Los hitos 0 y 1 están implementados. El hito 4 (voz) está parcialmente
+implementado: STT, TTS y VAD existen, pero la voz queda sin validar del todo
+hasta que se completen las pruebas de VAD con ruido, corte de red y cierre
+limpio. El hito 2 (ojos/servos) sigue sin HIL completo. **No se da nada por
+validado** hasta que el equipo complete las pruebas manuales de
 `docs/PENDIENTES.md`.
 
 Pruebas manuales por hito (el equipo las ejecuta y las confirma):
