@@ -89,7 +89,7 @@ hardware y sin `BENCH_PORT`.
 - Esperar `READY`; heartbeat cada ~1 s. Si la PCA no responde:
   `ERR PCA9685_NOT_READY`; resetear/revisar alimentación o I2C, no reintentar
   desde la app.
-- Un solo dueño del puerto serial. Mirada latest-wins (un slot, no cola); los
+- Un solo responsable del puerto serial. Mirada latest-wins (un slot, no cola); los
   párpados tienen una orden en vuelo con timeout. No bloquee `asyncio`.
 - Nunca abrir, flashear ni enviar comandos a un serial que no sea `BENCH_PORT`.
   Sin `BENCH_PORT`, salta las pruebas de hardware y lo dice.

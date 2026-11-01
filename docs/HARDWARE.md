@@ -221,7 +221,7 @@ Reglas:
 | `ERR PCA9685_NOT_READY` | PCA sin alimentación, I2C mal cableado, dirección distinta de `0x40`, OE mal | Revisar 3V3, GND, SDA/SCL, jumpers de dirección y OE. |
 | No llega `READY` | La placa se reinició al abrir el puerto, baudios incorrectos o firmware distinto | Esperar 8 s; confirmar 115200; volver a abrir; revisar `STATUS`. |
 | Los servos tiemblan o el ESP32 se reinicia | Fuente insuficiente o masa común ausente | Fuente externa de 5 V/5 A, masa común, condensador. |
-| Los párpados se mueven al revés | Canal o calibración incorrectos | No cambiar el firmware; revisar el canal y el TOML con el dueño. |
+| Los párpados se mueven al revés | Canal o calibración incorrectos | No cambiar el firmware; revisar el canal y el TOML en validación. |
 | `TIRED` no se ve bien | Pose intermedia sin validar | Tratarlo como pendiente HIL; no declararlo validado. |
 | `NOD` no hace nada | El firmware no lo implementa | No usarlo; está en `docs/PENDIENTES.md`. |
 
@@ -235,8 +235,8 @@ Reglas:
 | Pose `TIRED` (63/150/98/80) | Pendiente HIL. |
 | Alimentación sostenida con los 6 servos | Pendiente de medir. |
 | `NOD` | No implementado. |
-| Seguimiento visual con cámara real | Pendiente del dueño. |
-| Audio con micrófono/altavoz reales | Pendiente del dueño. |
+| Seguimiento visual con cámara real | Pendiente de validación. |
+| Audio con micrófono/altavoz reales | Pendiente de validación. |
 
 ## 11. Seguridad
 
@@ -244,7 +244,7 @@ Reglas:
   el USB.
 - No mover los servos a mano contra su tope; pueden romper el mecanismo.
 - Al probar, mantener dedos y cables fuera del mecanismo.
-- No ejecutar un autotest de ojos sin avisar al dueño: los servos se mueven.
+- No ejecutar un autotest de ojos sin avisar al equipo: los servos se mueven.
 - No alimentar la PCA por USB ni por el regulador del ESP32.
 - Si algo huele a quemado o el ESP32 se reinicia repetidamente, cortar la
   alimentación y revisar el cableado.

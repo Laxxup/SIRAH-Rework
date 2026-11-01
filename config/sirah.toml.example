@@ -12,5 +12,5 @@ language = "es"
 # identity = "card"
 
 # Cambia el modo solo para una tarjeta concreta; la clave es su nombre de archivo.
-# [persona.cards."ashley.json"]
+# [persona.cards."otra.json"]
 # identity = "card"

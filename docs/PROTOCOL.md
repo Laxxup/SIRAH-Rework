@@ -5,7 +5,7 @@ Estado: derivado únicamente de `firmware/sirah/sirah.ino` y de
 no hay validación HIL completa todavía. Si el `.ino` cambia, este documento
 debe revisarse.
 
-Este protocolo es la interfaz entre SIRAH y el ESP32. El firmware es el dueño
+Este protocolo es la interfaz entre SIRAH y el ESP32. El firmware es el equipo
 de la física: la aplicación solo pide acciones semánticas y envía coordenadas
 normalizadas. La aplicación **no** debe calcular ángulos ni pulsos.
 
@@ -74,7 +74,7 @@ Secuencia recomendada para la aplicación:
 2. Esperar `READY` con timeout de 8 s (el reinicio por DTR puede tardar).
 3. Enviar `STATUS`; si responde `READY`, el enlace está vivo.
 4. Si llega `ERR PCA9685_NOT_READY`: cerrar, resetear la placa (o pedir al
-   dueño que revise alimentación/I2C) y reintentar con espera creciente.
+   equipo que revise alimentación/I2C) y reintentar con espera creciente.
 5. Si no llega nada: cerrar, esperar y reintentar. No enviar comandos a ciegas.
 
 `READY` es solo una señal de vida. El firmware no informa versión, estado de
@@ -170,7 +170,7 @@ La cola de párpados es FIFO y no bloqueante:
 
 ## 7. Reglas para el cliente SIRAH
 
-1. **Un solo dueño del puerto.** Una única tarea abre, escribe y lee. Ningún
+1. **Un solo responsable del puerto.** Una única tarea abre, escribe y lee. Ningún
    otro módulo toca el serial.
 2. **Usar `/dev/serial/by-id/...`**, no `/dev/ttyUSB0`, para sobrevivir a
    renumeraciones.
@@ -203,7 +203,7 @@ Secuencia recomendada:
 
 Si `READY` no llega y se recibe `ERR PCA9685_NOT_READY`, no es un problema de
 baudios: es la PCA o su alimentación. Un reset por DTR puede resolver un fallo
-transitorio; si persiste, el dueño debe revisar el hardware.
+transitorio; si persiste, el equipo debe revisar el hardware.
 
 ## 8. Ejemplos
 

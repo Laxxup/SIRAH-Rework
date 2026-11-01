@@ -40,7 +40,7 @@ active = "config/persona/sirah.json"
 language = "es"
 identity = "card"  # por defecto; "personaje" es alias
 
-[persona.cards."ashley.json"]
+[persona.cards."otra.json"]
 identity = "robot"  # modo estricto solo para esa tarjeta
 ```
 

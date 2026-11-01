@@ -8,7 +8,7 @@ dar por buenas. No marcar como resuelto sin evidencia.
 - [ ] **`NOD` no implementado.** `sirah.ino` acepta `NOD` pero no mueve nada;
   con ID responde `ACK` y `DONE` (un `DONE` que anuncia una acción inexistente),
   así que la capa semántica no debe enviarlo ni fiarse de esa respuesta. Si se
-  quiere asentar, hay que definir el movimiento físico y validarlo con el dueño;
+  quiere asentar, hay que definir el movimiento físico y validarlo en validación;
   no tocar `firmware/` sin autorización.
 - [ ] **`MODE` no persiste.** Solo valida y devuelve `STATE`; el firmware no
   guarda el modo ni lo usa. La aplicación no debe depender de `MODE` para su
@@ -39,14 +39,14 @@ dar por buenas. No marcar como resuelto sin evidencia.
   que la mirada puede cambiar mientras los párpados se mueven. Es intencional,
   pero hay que probarlo visualmente.
 
-## Hardware físico (solo el dueño)
+## Hardware físico (solo con validación física)
 
 - [ ] Confirmar el modelo de ESP32 y los pines I2C reales (el firmware usa los
   pines por defecto del core).
 - [ ] Confirmar el cableado CH0..CH5 contra el montaje real.
 - [ ] Confirmar que la PCA está en `0x40` y que `OE` está habilitado.
 - [ ] Medir la fuente de 5 V con los 6 servos en movimiento.
-- [ ] Probar `TIRED` y ajustar solo si el dueño lo aprueba; la calibración es
+- [ ] Probar `TIRED` y ajustar solo si el equipo lo aprueba; la calibración es
   inmutable sin su permiso.
 - [ ] Probar reconexión física del USB con SIRAH corriendo.
 - [ ] Prueba de resistencia de 30 minutos.
@@ -58,24 +58,24 @@ dar por buenas. No marcar como resuelto sin evidencia.
      recalibrarse, sin quedarse sordo.
   3. Habla con el ruido todavía encendido: el turno debe transcribirse.
   4. Apaga el ruido y habla otra vez: debe entenderte sin reiniciar.
-  No marcar como validado hasta que el dueño lo confirme.
+  No marcar como validado hasta que el equipo lo confirme.
 
 ## Entorno de desarrollo
 
 - [x] `uv` instalado en `~/.local/bin` (0.13.5). Si el comando no aparece,
   ejecuta `source ~/.local/bin/env` o añade `~/.local/bin` al PATH.
-- [ ] El usuario `laxxup` no pertenece a `dialout`, `video` ni `audio`.
+- [ ] el usuario actual no pertenece a `dialout`, `video` ni `audio`.
 - [ ] No hay `/dev/serial/by-id/` (no hay ESP32 conectado ahora).
 - [ ] No hay `arduino-cli`; no se puede flashear el firmware de banco.
 - [x] Piper está en `.venv/bin/piper` y el modelo
   `models/voices/es_MX-claude-high.onnx` con su `.json` (verificado el
   27/10/2026).
-- [x] El dueño probó el LLM real (Groq) y el STT reutilizando `LLM_API_KEY`
+- [x] El equipo probó el LLM real (Groq) y el STT reutilizando `LLM_API_KEY`
   (25/10/2026).
 
 ## Hitos
 
-- [x] **Hito 0 (instalación y diagnóstico).** Validado por el dueño el
+- [x] **Hito 0 (instalación y diagnóstico).** Validado por el equipo el
   25/10/2026: `setup` y `doctor` funcionan, 11 OK, 1 aviso y 0 fallas.
 - [ ] **Hito 1 (texto).** Confirmados diez turnos, streaming, Ctrl-C, corte y
   recuperación de red, arranque sin clave, permisos `0600` y logs solo en
@@ -84,7 +84,7 @@ dar por buenas. No marcar como resuelto sin evidencia.
   aviso de corte.
 - [ ] **Hito 2 (ojos).** Pendiente.
 - [ ] **Hito 4 (voz).** Implementado con tests simulados; falta la validación
-  física del dueño (ver abajo).
+  física de validación (ver abajo).
 
 ## Incidencias corregidas (con test)
 
@@ -169,7 +169,7 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 - [x] Memoria local primero; Zep fuera de v1.
 - [x] Panel web Starlette en el hito 7 y autotest explícito.
 
-## Prueba manual de los hitos 0 y 1 (dueño)
+## Prueba manual de los hitos 0 y 1 ()
 
 ### Confirmado el 25/10/2026
 
@@ -193,7 +193,7 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 
 ### Pendiente de confirmar (fase 1)
 
-- [ ] `LLM_MAX_TOKENS=1024`, `LLM_REASONING_EFFORT=low` y `USER_NAME=Luis` en
+- [ ] `LLM_MAX_TOKENS=1024`, `LLM_REASONING_EFFORT=low` y `USER_NAME=Nombre` en
   tu `.env`.
 - [ ] Una respuesta larga termina completa; si se corta, aparece
   `[AVISO] La respuesta se cortó por el límite de tokens`.
@@ -212,11 +212,11 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 
 ## Fase 2A — tarjetas de personaje
 
-- [ ] **Validar con el dueño la tarjeta por defecto y una tarjeta local.** Los
-  tests usan tarjetas sintéticas y nunca la tarjeta real de Ashley.
+- [ ] **Validar en validación la tarjeta por defecto y una tarjeta local.** Los
+  tests usan tarjetas sintéticas y nunca una tarjeta local.
 - [ ] **Validar el aviso de tarjeta inglesa** al arrancar con una tarjeta real.
 - [ ] **Saludo en inglés con una tarjeta inglesa.** Con `identity = "card"` y la
-  tarjeta de Ashley, el saludo de arranque salió en inglés y mezcló el nombre
+  una tarjeta local, el saludo de arranque salió en inglés y mezcló el nombre
   del usuario; debería salir en español. Anotado el 27/10/2026, sin implementar.
 - [ ] **Validar la migración del historial** en una instalación con
   `default.jsonl`: debe quedar `sirah.jsonl` y `sirah.jsonl.bak`.
@@ -239,7 +239,7 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 
 ## Hito 4 — voz
 
-### Confirmado el 01/11/2026 (dueño)
+### Confirmado el 01/11/2026 ()
 
 - [x] Ajuste de ganancia del micrófono en KDE/alsamixer: el suelo de ruido bajó
   de 2129 a 295–382 RMS.
@@ -254,7 +254,7 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 ### Pendiente de confirmar
 
 - [ ] **El VAD se recupera tras un ruido constante.** Pasos en
-  [Hardware físico (solo el dueño)](#hardware-físico-solo-el-dueño).
+  [Hardware físico (solo con validación física)](#hardware-físico-solo-el-equipo).
 - [ ] Corte de internet: debe avisar y seguir escuchando; al volver la red, los
   turnos funcionan otra vez.
 - [ ] Ctrl-C y después `pgrep -a 'arecord|aplay|piper'`: sin procesos.
@@ -266,9 +266,9 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
    ```bash
    grep -E 'LLM_MAX_TOKENS|LLM_REASONING_EFFORT|USER_NAME' .env
    ```
-   Debe mostrar 1024, low y Luis.
+   Debe mostrar 1024, low y el nombre configurado.
 2. Arranca `uv run sirah` y pide una respuesta larga, por ejemplo:
-   "Cuéntame la historia de Luis XIV en cinco frases". Debe terminar la idea;
+   "Cuéntame la historia de un rey en cinco frases". Debe terminar la idea;
    si el modelo se alarga y se corta, debe aparecer el `[AVISO]` con
    `LLM_MAX_TOKENS=1024`.
 3. Revisa el log del turno:
@@ -279,7 +279,7 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
    `reasoning_tokens`; con `low`, el razonamiento debe ser pequeño.
 4. Pide algo que antes saliera con listas o énfasis. No deben verse asteriscos,
    viñetas ni espacios antes del salto de línea.
-5. Pregunta "¿Cómo me llamo?" con `USER_NAME=Luis`. Puede usarlo; lo importante
+5. Pregunta "¿Cómo me llamo?" con `USER_NAME=Nombre`. Puede usarlo; lo importante
    es que el nombre venga del dato configurado y no de una regla inventada.
 6. Cierra y vuelve a abrir SIRAH. El saludo no debe presentar el historial
    anterior como si acabara de ocurrir.

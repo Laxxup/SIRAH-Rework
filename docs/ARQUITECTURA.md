@@ -1,7 +1,7 @@
 # Arquitectura de SIRAH
 
-Estado: **aprobada por el dueño el 24/10/2026**. Hitos 0 y 1 implementados en
-código y tests; falta la prueba manual del dueño. El hito 2 (ojos) está
+Estado: **aprobada por el equipo el 24/10/2026**. Hitos 0 y 1 implementados en
+código y tests; falta la prueba manual. El hito 2 (ojos) está
 pendiente. Este documento es la guía de construcción; cualquier cambio de
 estructura se anota en `docs/DECISIONES.md`.
 
@@ -18,7 +18,7 @@ línea de lo que falta.
 
 Decisiones que sostienen el diseño:
 
-- **Un dueño por recurso:** una tarea para el serial, una para la cámara, una
+- **Un equipo por recurso:** una tarea para el serial, una para la cámara, una
   para el micrófono. Nadie más los toca.
 - **El núcleo no sabe de hardware:** las acciones son semánticas (`look`,
   `blink`, `tired`); el adaptador decide cómo se envían.
@@ -205,7 +205,7 @@ La visión **solo** mueve la mirada; no toca párpados ni envía `BLINK`. La
 correspondencia izquierda/derecha se confirma en la prueba física del hito 3;
 si sale invertida, es un cambio de signo de una línea.
 
-## 5. Ojos: el dueño único del serial
+## 5. Ojos: el gestor único del serial
 
 `serial_eyes.py` es la pieza más delicada. Su diseño:
 
@@ -357,7 +357,7 @@ active = "config/persona/sirah.json"
 language = "es"
 identity = "card"           # por defecto; "personaje" es alias
 
-[persona.cards."ashley.json"]
+[persona.cards."otra.json"]
 identity = "robot"          # modo estricto solo para esa tarjeta
 ```
 
@@ -466,7 +466,7 @@ hardware.
 - **Supervisor:** una capa que falla no impide las demás.
 - **Hardware de banco:** marcados `hardware`; solo corren si existe
   `BENCH_PORT`, y solo contra ese puerto. Si no está, se saltan y se dice.
-- **Voz real, cámara real, servos reales:** solo el dueño. Cada hito con
+- **Voz real, cámara real, servos reales:** solo con validación física. Cada hito con
   hardware entrega una lista corta de pasos manuales y se registra en
   `docs/PENDIENTES.md`.
 
@@ -476,19 +476,19 @@ hardware.
 |---|---|---|
 | 0 | Scaffold, config, logs, CLI, `setup`, `doctor`, `Makefile`, README inicial, tests | `uv sync`, `setup` y `doctor` funcionan en limpio. El criterio "llega a chatear" se cierra con el hito 1 |
 | 1 | Texto: persona, LLM con streaming, historial local, parser de acciones, saludo, tests | `uv run sirah` conversa solo con `LLM_API_KEY`; pasar persona es cambiar un archivo |
-| 2 | Ojos: adaptador serial, firmware de banco, parpadeo natural, heartbeat, reconexión, `eyes test` | Pasan tests simulados y de banco (si hay `BENCH_PORT`); el dueño confirma los servos |
-| 3 | Visión: YuNet, hilo de cámara, suavizado, `TARGET`, opt-in | Tests con detector falso y modelo real; el dueño confirma el seguimiento |
-| 4 | Voz: `arecord`, VAD, Groq STT, Piper, `aplay`, half-duplex | Pruebas por etapa con audio; el dueño confirma una conversación |
-| 5 | Memoria: historial local ya cubierto; **Zep se omite** salvo que el dueño lo pida | Persistencia entre sesiones comprobada |
+| 2 | Ojos: adaptador serial, firmware de banco, parpadeo natural, heartbeat, reconexión, `eyes test` | Pasan tests simulados y de banco (si hay `BENCH_PORT`); el equipo confirma los servos |
+| 3 | Visión: YuNet, hilo de cámara, suavizado, `TARGET`, opt-in | Tests con detector falso y modelo real; el equipo confirma el seguimiento |
+| 4 | Voz: `arecord`, VAD, Groq STT, Piper, `aplay`, half-duplex | Pruebas por etapa con audio; el equipo confirma una conversación |
+| 5 | Memoria: historial local ya cubierto; **Zep se omite** salvo que el equipo lo pida | Persistencia entre sesiones comprobada |
 | 6 | Autotest explícito de hardware con confirmación | `sirah test-hardware` recorre ojos, cámara, micro y altavoz |
-| 7 | Panel web local, sin build de frontend | El dueño configura y arranca desde el navegador; SIRAH funciona sin panel |
+| 7 | Panel web local, sin build de frontend | El equipo configura y arranca desde el navegador; SIRAH funciona sin panel |
 | 8 | Versiones, `update` con reversión, servicio systemd, `DESPLIEGUE.md` | Actualizar, revertir y sobrevivir a un reinicio |
 
 Los hitos 0, 1 y 4 están implementados y cubiertos por tests simulados. **No se
-dan por validados** hasta que el dueño complete las pruebas manuales de
+dan por validados** hasta que el equipo complete las pruebas manuales de
 `docs/PENDIENTES.md`.
 
-Pruebas manuales por hito (el dueño las ejecuta y las confirma):
+Pruebas manuales por hito (el equipo las ejecuta y las confirma):
 
 - **0:** `uv sync`, `sirah setup`, `sirah doctor`; mensajes claros.
 - **1:** conversación de 10 turnos; respuesta en streaming; cambiar de persona.

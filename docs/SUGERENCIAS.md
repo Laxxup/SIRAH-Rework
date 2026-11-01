@@ -25,7 +25,7 @@ su fuente y la fecha de consulta. Lo que no se pudo verificar se marca como
 | Panel web | Sin definir | **Starlette + uvicorn** como extra opcional, sin build de frontend | Se decide en hito 7 |
 | Hardware | Fuente externa para servos | **5 V/5 A, masa común, 1000 µF, cables cortos** | Sí (sugerencia) |
 
-Nada de esto se adopta hasta que el dueño apruebe el plan. Hasta entonces rige
+Nada de esto se adopta hasta que el equipo apruebe el plan. Hasta entonces rige
 la sección 9 de `AGENTS.md`.
 
 ---
@@ -54,7 +54,7 @@ para ese endpoint. Se puede usar cualquier proveedor compatible cambiando
 **Groq Free como proveedor por defecto**, con `LLM_MODEL=openai/gpt-oss-20b`
 para respuestas rápidas y la posibilidad de cambiar a `openai/gpt-oss-120b`
 sin tocar código. Mantener el cliente genérico OpenAI-compatible para que el
-dueño pueda usar Gemini, OpenRouter u Ollama cambiando tres variables.
+equipo pueda usar Gemini, OpenRouter u Ollama cambiando tres variables.
 
 - No usar el endpoint de OpenCode Zen/Kimi del `.env` heredado como default:
   no se verificó que sea gratuito.
@@ -100,7 +100,7 @@ minutos, y evita instalar modelos pesados en la Pi.
 
 - No implementar STT local en el hito 4. Dejar la interfaz `STT` preparada
   para un adaptador local futuro.
-- Si el dueño quiere funcionar sin internet, la primera alternativa a probar
+- Si el equipo quiere funcionar sin internet, la primera alternativa a probar
   es **faster-whisper `small` int8** por su wheel aarch64 y su integración
   Python; Vosk `small-es` es el respaldo de bajo consumo si la Pi va justa.
 - Enviar audio mono 16 kHz; recortar silencios con el VAD antes de gastar una
@@ -138,7 +138,7 @@ y un `.venv-piper`; no existen en este proyecto y no se van a recrear.
 
 **Piper con `es_MX-claude-high`** (español de México, 22,05 kHz, alta
 calidad). El `MODEL_CARD` de esa voz declara dataset con licencia Apache-2.0.
-Alternativas de voz si al dueño no le gusta: `es_ES-davefx-medium` (dataset
+Alternativas de voz si no resulte adecuada: `es_ES-davefx-medium` (dataset
 CC0) o `es_MX-ald-medium` (dataset Unlicense).
 
 - Invocar `piper` como **proceso separado** (`subprocess`) y no importar su
@@ -230,7 +230,7 @@ El `.env` heredado define umbrales de energía/RMS (`VOICE_*_RMS`,
 - El suelo de ruido adaptativo evita que un ruido constante dispare el VAD.
 - No usar openWakeWord en v1: sus modelos preentrenados son solo en inglés y
   con licencia no comercial; entrenar “SIRAH” en español es un proyecto
-  aparte. Se puede añadir después si el dueño lo pide.
+  aparte. Se puede añadir después si se solicite expresamente.
 - Si el RMS no basta en las pruebas reales, evaluar Silero VAD como extra
   opcional, no como dependencia base.
 
@@ -259,7 +259,7 @@ Historial local limitado; Zep opcional.
 
 **Historial local primero.** Guardar JSONL acotado (últimos N mensajes y
 rotación por tamaño) en el directorio de datos del usuario. No implementar
-Zep en v1; dejar la interfaz `Memory` y activarlo solo si el dueño lo pide en
+Zep en v1; dejar la interfaz `Memory` y activarlo solo si se solicite expresamente en
 el hito 5.
 
 - No guardar secretos ni audio.
@@ -277,7 +277,7 @@ Strategy* (Community Edition descontinuada, 02/04/2025)
 
 | Pieza | Recomendación | Motivo |
 |---|---|---|
-| Serial | `pyserial` con `exclusive=True`, timeout corto y un solo dueño | Estándar, puro Python, funciona en x86_64 y aarch64 |
+| Serial | `pyserial` con `exclusive=True`, timeout corto y un solo responsable | Estándar, puro Python, funciona en x86_64 y aarch64 |
 | HTTP | `httpx` con timeouts explícitos, reintentos acotados y streaming SSE | SSE, multipart para STT y timeouts sin pelear con `urllib`; pocas dependencias |
 | OpenCV | `opencv-python-headless >=4.10,<5` | YuNet 2023mar; sin GUI; wheel aarch64 |
 | Audio | `arecord`/`aplay` de ALSA vía `subprocess` | Ya instalado en Linux; sin PortAudio ni compilación |
@@ -321,7 +321,7 @@ Omitir no es abandonar: es no cargar complejidad antes de que haga falta.
 - **Zep.** La memoria local cubre el caso de uso; Zep añade clave, nube y
   límites.
 - **STT/TTS locales.** Groq + Piper cubren voz sin instalar modelos grandes;
-  el respaldo offline se evalúa si el dueño lo pide.
+  el respaldo offline se evalúa si se solicite expresamente.
 - **Panel web en el primer corte.** Primero texto, ojos, visión y voz; el
   panel llega en el hito 7.
 - **Character cards.** La fase 2A ya carga v2/v3 y tarjetas antiguas simples;
@@ -362,8 +362,8 @@ Todas consultadas el **24/10/2026**, salvo la fecha propia de la página.
 - Los límites gratuitos pueden cambiar sin aviso; el código debe degradar con
   un mensaje claro, no asumir cuota.
 - No se ha medido el rendimiento real de ningún modelo en la Raspberry Pi del
-  dueño. Todas las estimaciones de rendimiento en Pi son cualitativas.
-- No se ha probado la calidad de `es_MX-claude-high` con la voz del dueño;
+  equipo. Todas las estimaciones de rendimiento en Pi son cualitativas.
+- No se ha probado la calidad de `es_MX-claude-high` con la voz de validación;
   puede requerir cambiar a `davefx` o `ald`.
 - La licencia de cada voz de Piper debe revisarse en su `MODEL_CARD` antes de
   distribuir el robot.

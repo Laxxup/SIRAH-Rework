@@ -5,13 +5,13 @@ Registro de las decisiones de diseño y de su estado. Fecha de la propuesta:
 
 Estados:
 
-- **Aprobada:** el dueño la confirmó.
+- **Aprobada:** el equipo la confirmó.
 - **Propuesta:** forma parte de un plan futuro y espera confirmación.
 - **Tomada:** decisión técnica dentro del margen del agente; no necesita
-  aprobación, pero se puede revertir si el dueño lo pide.
+  aprobación, pero se puede revertir si se solicite expresamente.
 - **Descartada:** se evaluó y no se adopta, con su motivo.
 
-> El dueño aprobó el plan completo y el stack propuesto el **24/10/2026**. Las
+> El equipo aprobó el plan completo y el stack propuesto el **24/10/2026**. Las
 > decisiones A1–A11 quedan aprobadas. A partir de aquí se construye el hito 0.
 
 ## 1. Aprobaciones
@@ -41,10 +41,10 @@ Estas decisiones no cambian el stack ni el alcance; son la forma de construirlo.
 | T2 | Un proceso con `asyncio`; hilos solo para serial y cámara; subprocesos para audio | Microservicios o un hilo por capa | Menos superficie de fallo y un solo ciclo de vida |
 | T3 | `.env` parseado con la biblioteca estándar | `python-dotenv` | Son ~20 líneas; no se añade una dependencia por eso |
 | T4 | Duraciones en nombres (`*_MS`, `*_S`) como enteros | Cadenas tipo `90s` | Se valida y se lee sin un parser propio |
-| T5 | La calibración TOML solo se valida; no se usa para calcular ángulos | Duplicar la calibración en Python o en el prompt | El firmware es el dueño de la física; una sola fuente |
+| T5 | La calibración TOML solo se valida; no se usa para calcular ángulos | Duplicar la calibración en Python o en el prompt | El firmware es el responsabilidad del firmware; una sola fuente |
 | T6 | Datos en `$XDG_DATA_HOME/sirah` con `0700`; historial y logs `0600` | Guardar junto al código | Permisos correctos y no ensuciar el repo |
 | T7 | Logs con `RotatingFileHandler` 1 MB × 3 | Log sin límite | La SD de la Raspberry Pi se desgasta |
-| T8 | Interfaz `Eyes` no bloqueante; un hilo dueño del serial | `asyncio` + `pyserial` en el bucle | `pyserial` es bloqueante; el hilo aísla el I/O y simplifica la reconexión |
+| T8 | Interfaz `Eyes` no bloqueante; un hilo equipo del serial | `asyncio` + `pyserial` en el bucle | `pyserial` es bloqueante; el hilo aísla el I/O y simplifica la reconexión |
 | T9 | Dirección `serial://...`; si está vacía, ojos apagados | Adivinar el único puerto serial disponible | Podría mover un dispositivo que no es el robot; `setup`/`doctor` ayudan a fijarlo |
 | T10 | Heartbeat a 1 Hz; `TARGET` último-gana a 15 Hz; sin cola de mirada | Encolar cada `TARGET` | Evita acumular retraso y saturar el puerto |
 | T11 | No enviar `MODE` ni `NOD`; `STATUS` solo para handshake | Usar `MODE` como estado de la aplicación | El firmware no persiste el modo y `NOD` no hace nada |
@@ -59,7 +59,7 @@ Estas decisiones no cambian el stack ni el alcance; son la forma de construirlo.
 | T20 | Servicio systemd **de usuario** | Servicio del sistema | No requiere root y encaja con una Pi de escritorio |
 | T21 | Panel solo en `127.0.0.1` por defecto; token si sale a la red | Abrirlo a la red con contraseña opcional | Evita exponer claves y servos por descuido |
 | T22 | El criterio "llega a chatear" del hito 0 se cierra en el hito 1 | Bloquear el hito 0 hasta tener chat | El hito 0 entrega instalación y diagnóstico; el chat es el hito 1 |
-| T23 | Documentación y mensajes en español; código e identificadores en inglés | Todo en inglés | Lo pide `AGENTS.md` y el dueño |
+| T23 | Documentación y mensajes en español; código e identificadores en inglés | Todo en inglés | Lo pide `AGENTS.md` y el equipo |
 | T24 | `--debug` para trazas; errores de usuario siempre en español y accionables | Mostrar stack traces en consola | Se puede diagnosticar sin asustar al usuario |
 | T25 | `uv` se instaló en `~/.local/bin` durante el hito 0 (0.13.5) | Instalación del sistema con root | No hacía falta root; si falta en el PATH, `source ~/.local/bin/env` |
 | T26 | `app.py`, `states.py` y `core/supervisor.py` se posponen al hito 2; el chat de texto se compone en `terminal.py` | Crear archivos vacíos o un supervisor sin capas | En el hito 1 no hay capas que supervisar; el hito 2 los añade con los ojos |
@@ -75,9 +75,9 @@ Estas decisiones no cambian el stack ni el alcance; son la forma de construirlo.
 | T36 | `LLM_MAX_TOKENS=1024`, `LLM_REASONING_EFFORT=low` configurable (vacío = no enviar), log de `finish_reason`/uso en cada turno y aviso `[AVISO]` si el corte es por `length` | Mantener 512 y reintentar los cortes con contenido | El razonamiento de `gpt-oss-20b` consumía el límite; reintentar un corte duplicaría el texto. Con `low` el razonamiento baja a ~10 tokens y las respuestas caben |
 | T37 | `USER_NAME` es un dato: el prompt añade solo `Nombre del usuario: {nombre}.`; el historial lleva siempre la nota de que `HISTORY` es contexto pasado | Convertir el nombre en una regla ("no preguntes el nombre") o no marcar el historial | La conducta la decide la personalidad; el nombre y el origen del historial son contexto, no instrucciones |
 | T38 | Un limpiador de texto plano actúa sobre el stream y su resultado se guarda en historial y se usará para TTS | Limpiar solo al final o confiar en el prompt | El modelo ignora el formato; el mismo texto limpio evita que TTS lea asteriscos o viñetas |
-| T39 | Las personas son Character Card v2/v3; también se aceptan tarjetas antiguas con campos en la raíz | Mantener un formato propio o exigir solo v3 | Es el formato que ya usan las tarjetas del dueño; el cargador tolera variantes |
+| T39 | Las personas son Character Card v2/v3; también se aceptan tarjetas antiguas con campos en la raíz | Mantener un formato propio o exigir solo v3 | Es el formato que ya usan las tarjetas de validación; el cargador tolera variantes |
 | T40 | La tarjeta se limpia solo en memoria: macros, asteriscos de acción y líneas que anulan el contrato | Reescribir el archivo o confiar en el prompt | El archivo original queda intacto y ninguna tarjeta puede saltarse el contrato |
-| T41 | La tarjeta activa, el idioma y la identidad viven en `config/sirah.toml`; `SIRAH_PERSONA` sigue como override temporal | Poner la identidad en la tarjeta o todo en `.env` | Cambiar de personaje no toca código ni secretos; la identidad es una decisión del dueño |
+| T41 | La tarjeta activa, el idioma y la identidad viven en `config/sirah.toml`; `SIRAH_PERSONA` sigue como override temporal | Poner la identidad en la tarjeta o todo en `.env` | Cambiar de personaje no toca código ni secretos; la identidad es una decisión de validación |
 | T42 | Si una tarjeta falla, se avisa con `Solución:` y se arranca con `sirah.json` | Salir con error | Una tarjeta rota no debe impedir conversar |
 | T43 | En modo `card` (por defecto) la tarjeta decide cuerpo, afecto y ficción; el piso fijo impide afirmar capacidades reales o hechos no ocurridos | Prohibir toda ficción o dejar que la tarjeta anule la honestidad | La tarjeta manda sin permitir mentir sobre el hardware (A12) |
 | T44 | El saludo se inspira en `first_mes` y, si no hay, usa el texto fijo; el historial de la tarjeta por defecto se migra de `default.jsonl` a `sirah.jsonl` con respaldo | Copiar el saludo literal o dejar dos historiales | Evita repetir el mismo saludo y no pierde conversaciones al cambiar de formato |
@@ -122,19 +122,19 @@ ojos con placa de banco:
 
 ## 5. Historial
 
-- **24/10/2026:** se documentan protocolo, hardware y alternativas; el dueño
+- **24/10/2026:** se documentan protocolo, hardware y alternativas; el equipo
   aprueba el plan completo y el stack. Empieza el hito 0.
 - **24/10/2026:** hito 0 implementado: configuración, `setup`, `doctor`, logs,
   tests y `uv.lock`. `make check` pasa (52 tests). Repositorio git inicializado
-  con el commit del hito 0. La prueba manual del dueño sigue pendiente.
+  con el commit del hito 0. La prueba manual sigue pendiente.
 - **24/10/2026:** hito 1 implementado: chat por texto con streaming, persona,
   historial JSONL por persona, saludo, parser de acciones, `--persona` y
   manejo de errores. `make check` pasa (105 tests) y se probó el arranque
-  completo con un LLM falso local. La prueba manual del dueño sigue pendiente.
+  completo con un LLM falso local. La prueba manual sigue pendiente.
 - **25/10/2026:** se corrige el cuelgue de Ctrl-C (hilo daemon y salida `130`)
   y el caso de una `{` partida entre chunks en el parser de acciones. Se añaden
   tests de PTY y de streaming; `make check` pasa (108 tests).
-- **25/10/2026:** el dueño valida el hito 0 y confirma el chat por texto. Se
+- **25/10/2026:** el equipo valida el hito 0 y confirma el chat por texto. Se
   unifican las ayudas de extras en `uv sync --all-extras` y se clasifican los
   errores del LLM (red, timeout, clave, cuota, 5xx, respuesta inesperada), con
   la causa original en el log y tests de recuperación del chat. `make check`
@@ -150,7 +150,7 @@ ojos con placa de banco:
   historial se marca como contexto pasado. Se añade un limpiador de Markdown
   sobre el stream; el mismo texto limpio va al historial y al futuro TTS.
   `make check` pasa con 145 tests.
-- **27/10/2026:** el dueño fija la prioridad de capas: la tarjeta manda sobre
+- **27/10/2026:** el equipo fija la prioridad de capas: la tarjeta manda sobre
   identidad, cuerpo, afecto, saludo, nombre y longitud; el código solo conserva
   un piso fijo (formato, consentimiento, honestidad mínima e historial como
   contexto). `identity = "card"` pasa a ser el modo por defecto y `"robot"` queda
@@ -158,7 +158,7 @@ ojos con placa de banco:
 - **27/10/2026:** hito 4 (voz) adelantado antes del hito 2. Micrófono por
   `arecord`, VAD con RMS y `webrtcvad`, STT de Groq, Piper y `aplay`, todo
   opt-in con `sirah voice`, half-duplex y audio solo en memoria. `make check`
-  pasa con 218 tests; falta la validación física del dueño.
+  pasa con 218 tests; falta la validación física del equipo.
 - **31/10/2026:** se retira `webrtcvad` y `SpeechDetector`: el VAD real siempre
   fue el adaptativo por RMS. Se eliminan la dependencia, `VAD_AGGRESSIVENESS` y
   el aviso de `doctor` que exigía el paquete; `VoiceLoop` usa el detector
