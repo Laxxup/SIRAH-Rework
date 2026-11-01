@@ -15,7 +15,7 @@ import pytest
 
 from sirah.adapters.history_file import HistoryFile, history_path
 from sirah.adapters.llm import LLMClient, LLMError
-from sirah.config import Config, load_config
+from sirah.config import DEFAULT_PERSONA, Config, load_config
 from sirah.core.memory import Message
 from sirah.core.persona import Persona
 from sirah.terminal import run_terminal
@@ -335,12 +335,19 @@ def test_default_history_is_migrated_on_start(tmp_path: Path) -> None:
     old = history_dir / "default.jsonl"
     old.write_text('{"role":"user","text":"antes"}\n', encoding="utf-8")
 
-    persona = _persona()
+    persona = Persona(
+        path=DEFAULT_PERSONA,
+        name="SIRAH",
+        personality="Serena.",
+        first_mes="",
+        warnings=(),
+    )
     _run(tmp_path, persona, ScriptedLLM([["uno"]]), ["hola", "/salir"])
 
+    history_name = history_path(tmp_path / "data" / "sirah", DEFAULT_PERSONA).name
     assert not old.exists()
-    assert (history_dir / "sirah.jsonl.bak").exists()
-    history = HistoryFile(history_dir / "sirah.jsonl")
+    assert (history_dir / (history_name + ".bak")).exists()
+    history = HistoryFile(history_dir / history_name)
     assert [(item.role, item.content) for item in history.load(10)] == [
         ("user", "antes"),
         ("user", "hola"),

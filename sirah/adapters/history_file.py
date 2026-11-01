@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import hashlib
 import json
 import logging
 import os
@@ -25,20 +26,28 @@ _KEEP_LINES = 150
 
 
 def history_path(data_dir: Path, persona_path: Path) -> Path:
-    """Un archivo por persona; el nombre se sanea para no salir del directorio."""
+    """Un archivo por persona; el nombre se sanea para no salir del directorio.
+
+    Incluye una firma estable del directorio para que dos tarjetas homónimas en
+    directorios distintos no compartan historial.
+    """
     stem = persona_path.stem.removesuffix(".persona")
     safe = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip(".") or "persona"
-    return data_dir / "history" / f"{safe}.jsonl"
+    signature = hashlib.sha256(str(persona_path.parent).encode("utf-8")).hexdigest()[:8]
+    return data_dir / "history" / f"{safe}_{signature}.jsonl"
+
+
+_DEFAULT_PERSONA_PATH = Path(__file__).resolve().parents[2] / "config" / "persona" / "sirah.json"
 
 
 def migrate_default_history(data_dir: Path) -> Path | None:
     """Renombra el historial de la tarjeta antigua, dejando una copia de respaldo."""
     history_dir = data_dir / "history"
     source = history_dir / "default.jsonl"
-    target = history_dir / "sirah.jsonl"
+    target = history_path(data_dir, _DEFAULT_PERSONA_PATH)
     if not source.exists() or target.exists():
         return None
-    backup = history_dir / "sirah.jsonl.bak"
+    backup = history_dir / f"{target.name}.bak"
     try:
         shutil.copy2(source, backup)
         os.chmod(backup, 0o600)

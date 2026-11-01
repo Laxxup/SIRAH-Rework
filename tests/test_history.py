@@ -12,15 +12,21 @@ from sirah.adapters.history_file import (
     history_path,
     migrate_default_history,
 )
+from sirah.config import DEFAULT_PERSONA
 from sirah.core.memory import Message
 
 
 def test_history_path_uses_persona_name(tmp_path: Path) -> None:
-    assert history_path(tmp_path, Path("/x/sirah.json")) == (tmp_path / "history" / "sirah.jsonl")
-    assert history_path(tmp_path, Path("/x/default.persona.json")) == (
-        tmp_path / "history" / "default.jsonl"
+    sirah = history_path(tmp_path, Path("/x/sirah.json"))
+    assert sirah.parent == tmp_path / "history"
+    assert sirah.name.startswith("sirah_") and sirah.name.endswith(".jsonl")
+    default = history_path(tmp_path, Path("/x/default.persona.json"))
+    assert default.name.startswith("default_") and default.name.endswith(".jsonl")
+    assert history_path(tmp_path, Path("/x/mi persona!.json")).name.startswith("mi_persona_")
+    # Tarjetas homónimas en directorios distintos no comparten historial.
+    assert history_path(tmp_path, Path("/a/sirah.json")) != history_path(
+        tmp_path, Path("/b/sirah.json")
     )
-    assert history_path(tmp_path, Path("/x/mi persona!.json")).name == "mi_persona_.jsonl"
 
 
 def test_default_history_is_migrated_with_a_backup(tmp_path: Path) -> None:
@@ -31,11 +37,11 @@ def test_default_history_is_migrated_with_a_backup(tmp_path: Path) -> None:
     source.chmod(0o600)
 
     target = migrate_default_history(tmp_path)
-    expected = history_dir / "sirah.jsonl"
+    expected = history_path(tmp_path, DEFAULT_PERSONA)
     assert target == expected
     assert not source.exists()
     assert expected.read_text(encoding="utf-8") == '{"role":"user","text":"hola"}\n'
-    assert (history_dir / "sirah.jsonl.bak").read_text(encoding="utf-8") == (
+    assert (expected.with_name(expected.name + ".bak")).read_text(encoding="utf-8") == (
         '{"role":"user","text":"hola"}\n'
     )
     assert stat.S_IMODE(expected.stat().st_mode) == 0o600
