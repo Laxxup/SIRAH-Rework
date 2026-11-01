@@ -54,8 +54,8 @@ dar por buenas. No marcar como resuelto sin evidencia.
 - [ ] **El VAD se recupera tras un ruido constante** (requiere micrófono real).
   1. Ejecuta `uv run sirah voice`.
   2. Mantén un ruido continuo (ventilador o similar) por encima del umbral unos
-     15 s sin hablar, hasta que aparezca `[AVISO] ruido constante: baja la
-     ganancia...`.
+     15 s sin hablar. El turno debe responder "No te entendí" y el VAD debe
+     recalibrarse, sin quedarse sordo.
   3. Habla con el ruido todavía encendido: el turno debe transcribirse.
   4. Apaga el ruido y habla otra vez: debe entenderte sin reiniciar.
   No marcar como validado hasta que el dueño lo confirme.

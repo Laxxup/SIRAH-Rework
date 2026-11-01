@@ -215,13 +215,31 @@ def test_segmenter_counts_the_start_frames_as_voice() -> None:
     assert audio is not None
 
 
-def test_segmenter_discards_a_constant_noise_turn() -> None:
+def test_segmenter_keeps_long_speech_at_the_cap() -> None:
+    detector = AdaptiveSpeechDetector(noise_calibration_ms=100)
     segmenter = VoiceSegmenter(
-        lambda frame: True, start_frames=1, silence_ms=400, prebuffer_ms=0, max_turn_ms=100
+        detector, start_frames=1, silence_ms=40, prebuffer_ms=0, max_turn_ms=400
     )
-    results = [segmenter.feed(TONE) for _ in range(6)]
-    assert results[-1] is None
-    assert segmenter.last_discard == "noise"
+    for _ in range(10 + 5):
+        segmenter.feed(_level(300))
+
+    audio = None
+    for _ in range(30):
+        audio = segmenter.feed(_level(12000))
+        if audio is not None:
+            break
+
+    assert audio is not None
+    assert segmenter.last_discard is None
+
+
+def test_segmenter_keeps_a_constant_noise_turn() -> None:
+    segmenter = VoiceSegmenter(
+        lambda frame: True, start_frames=1, silence_ms=400, prebuffer_ms=0, max_turn_ms=400
+    )
+    results = [segmenter.feed(TONE) for _ in range(21)]
+    assert results[-1] is not None
+    assert segmenter.last_discard is None
 
 
 def test_segmenter_recalibrates_after_a_constant_noise_turn() -> None:
@@ -230,13 +248,13 @@ def test_segmenter_recalibrates_after_a_constant_noise_turn() -> None:
         detector(SILENCE)
     assert detector.noise_floor == 0
     segmenter = VoiceSegmenter(
-        detector, start_frames=1, silence_ms=400, prebuffer_ms=0, max_turn_ms=100
+        detector, start_frames=1, silence_ms=400, prebuffer_ms=0, max_turn_ms=400
     )
 
-    for _ in range(6):
-        assert segmenter.feed(_level(1500)) is None
+    results = [segmenter.feed(_level(1500)) for _ in range(21)]
 
-    assert segmenter.last_discard == "noise"
+    assert results[-1] is not None
+    assert segmenter.last_discard is None
     assert detector._speaking is False
     assert detector.noise_floor is None
     assert detector._samples == []

@@ -248,15 +248,12 @@ class VoiceSegmenter:
             frames = frames[: len(frames) - self._silence_run]
         voiced_frames = self._voiced_frames
         reached_max = len(self._frames) >= self.max_frames
-        constant_noise = (
-            reached_max and not self._silence_run and voiced_frames >= 0.9 * len(frames)
-        )
+        capped_voiced = reached_max and not self._silence_run and voiced_frames >= 0.9 * len(frames)
         self.reset()
-        if constant_noise:
-            self.last_discard = "noise"
-            if hasattr(self.detector, "recalibrate"):
-                self.detector.recalibrate()  # type: ignore[union-attr]
-            return None
+        if capped_voiced and hasattr(self.detector, "recalibrate"):
+            # Un turno largo sin pausa puede ser ruido constante: se recalibra,
+            # pero se envía igual para no perder una explicación larga.
+            self.detector.recalibrate()  # type: ignore[union-attr]
         if voiced_frames * FRAME_MS < _MIN_VOICE_MS:
             logger.debug(
                 "Turno corto descartado: %s ms de voz (mínimo %s ms)",
