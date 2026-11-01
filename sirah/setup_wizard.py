@@ -193,7 +193,8 @@ def download_voice(destination: Path, assume_yes: bool = False) -> None:
                 client.stream("GET", url) as response,
             ):
                 response.raise_for_status()
-                with temporary.open("wb") as handle:
+                descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                with os.fdopen(descriptor, "wb") as handle:
                     for chunk in response.iter_bytes(65536):
                         handle.write(chunk)
             actual_hash = sha256_file(temporary)
