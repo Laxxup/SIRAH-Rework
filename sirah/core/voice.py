@@ -43,35 +43,25 @@ class State(StrEnum):
     SPEAKING = "speaking"
 
 
-class NullEyes:
-    """Puerto de ojos apagado; el hito 2 implementará esta misma interfaz."""
-
-    def on_state(self, state: State) -> None:
-        return None
-
-    def on_actions(self, actions: object) -> None:
-        return None
-
-    def close(self) -> None:
-        return None
-
-
 class Supervisor:
     """Máquina de estados mínima que avisa a los ojos."""
 
-    def __init__(self, eyes: NullEyes | None = None) -> None:
-        self.eyes = eyes or NullEyes()
+    def __init__(self, eyes: object | None = None) -> None:
+        self.eyes = eyes
         self.state = State.IDLE
 
     def set(self, state: State) -> None:
         self.state = state
-        self.eyes.on_state(state)
+        if self.eyes is not None:
+            self.eyes.on_state(state)
 
     def actions(self, actions: object) -> None:
-        self.eyes.on_actions(actions)
+        if self.eyes is not None:
+            self.eyes.on_actions(actions)
 
     def close(self) -> None:
-        self.eyes.close()
+        if self.eyes is not None:
+            self.eyes.close()
 
 
 def rms(frame: bytes) -> float:
