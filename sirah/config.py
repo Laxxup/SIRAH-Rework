@@ -552,6 +552,7 @@ def update_env_file(path: Path, updates: Mapping[str, str]) -> None:
             key = match.group(1)
             if last[key] == index:
                 result.append(f"{key}={_format_env_value(remaining.pop(key))}")
+            # Las apariciones anteriores de la misma clave se descartan.
         else:
             result.append(line)
     for key, value in remaining.items():
