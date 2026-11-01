@@ -177,10 +177,17 @@ def identity_for(settings: PersonaSettings, card_path: Path) -> str:
     # Compatibilidad con claves solo por nombre, sin mezclar modos cuando dos
     # tarjetas homónimas viven en carpetas distintas.
     if override is None:
+        # Una entrada por el nombre simple es una intención inequívoca aunque
+        # exista otra entrada del mismo basename en otra ruta.
+        basename_only = [
+            value for key, value in settings.cards.items() if key == card_path.name
+        ]
         by_name = [
             value for key, value in settings.cards.items() if Path(key).name == card_path.name
         ]
-        if len(by_name) == 1:
+        if len(basename_only) == 1:
+            override = basename_only[0]
+        elif len(by_name) == 1:
             override = by_name[0]
     return override if override in _IDENTITIES else settings.identity
 
