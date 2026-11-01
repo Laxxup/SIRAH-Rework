@@ -22,6 +22,11 @@ escape_replacement() {
 ORCH_ESCAPED="$(escape_replacement "$ORCH")"
 SUB_ESCAPED="$(escape_replacement "$SUB")"
 
+if [ ! -d .opencode ]; then
+    echo "Falta el directorio .opencode; genera los agentes con OpenCode y vuelve a ejecutar setup."
+    exit 1
+fi
+
 grep -rl --include='*.md' -e '__ORCH_MODEL__' -e '__SUB_MODEL__' .opencode | while read -r f; do
     sed -i "s|__ORCH_MODEL__|$ORCH_ESCAPED|g; s|__SUB_MODEL__|$SUB_ESCAPED|g" "$f"
     echo "actualizado: $f"
