@@ -174,8 +174,9 @@ class VoiceLoop:
             while (phrase := await queue.get()) is not None:
                 try:
                     await self.tts.say(phrase)
-                except VoiceError as exc:
+                except Exception as exc:
                     # Una frase impronunciable no debe callar el resto.
+                    logger.exception("Fallo inesperado al reproducir una frase")
                     self.write(f"[AVISO] {exc}\n")
 
         speaker = asyncio.create_task(speak())
