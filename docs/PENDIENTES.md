@@ -53,10 +53,11 @@ dar por buenas. No marcar como resuelto sin evidencia.
 - [ ] Confirmar cámara, micrófono y altavoz reales.
 - [ ] **El VAD se recupera tras un ruido constante** (requiere micrófono real).
   1. Ejecuta `uv run sirah voice`.
-  2. Mantén un ruido constante por encima del umbral (ventilador o un tono)
-     hasta que aparezca `[AVISO] ruido constante: baja la ganancia...`.
-  3. Habla con normalidad: el siguiente turno debe transcribirse sin reiniciar.
-  4. Repite el ruido y vuelve a hablar para confirmar que se recupera otra vez.
+  2. Mantén un ruido continuo (ventilador o similar) por encima del umbral unos
+     15 s sin hablar, hasta que aparezca `[AVISO] ruido constante: baja la
+     ganancia...`.
+  3. Habla con el ruido todavía encendido: el turno debe transcribirse.
+  4. Apaga el ruido y habla otra vez: debe entenderte sin reiniciar.
   No marcar como validado hasta que el dueño lo confirme.
 
 ## Entorno de desarrollo
@@ -236,21 +237,28 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
   maliciosa puede traer instrucciones que no coincidan con la lista; el contrato
   fijo sigue por delante.
 
-## Hito 4 — voz (pendiente de validar)
+## Hito 4 — voz
 
-Pruebas del dueño, en orden:
+### Confirmado el 01/11/2026 (dueño)
 
-1. `uv run sirah voice --check`: graba 3 s y muestra el RMS y si el VAD detecta
-   voz. Ajusta `VAD_MIN_START_RMS` y `VAD_MIN_END_RMS` en `.env` si no detecta o
-   si se dispara solo.
-2. `uv run sirah voice` y habla tres turnos. Debe imprimir "Micrófono activo.
-   Ctrl-C para salir" y el aviso de que el audio se envía a Groq.
-3. Comprueba que no se oye a sí misma: la respuesta debe empezar después de
-   soltar el micrófono y no realimentarse.
-4. Corta internet y habla: debe avisar y seguir escuchando; al volver la red,
-   los turnos funcionan otra vez.
-5. Ctrl-C y después `pgrep -a 'arecord|aplay|piper'`: sin procesos.
-6. Repite con otra tarjeta (`--persona`): una sola voz Piper, misma mecánica.
+- [x] Ajuste de ganancia del micrófono en KDE/alsamixer: el suelo de ruido bajó
+  de 2129 a 295–382 RMS.
+- [x] `uv run sirah voice --check` varias veces: sin avisos tras el ajuste;
+  detecta voz en 21–27 de 150 frames al hablar.
+- [x] `uv run sirah voice`: conversación completa por voz (micrófono, Groq STT,
+  LLM y Piper) con `paplay`. En esta máquina hizo falta
+  `AUDIO_PLAYER_COMMAND=paplay` porque `aplay` no responde con PipeWire.
+- [x] Altavoces con volumen alto: sin eco ni autodisparo; la detección se
+  reactiva al terminar SIRAH.
+
+### Pendiente de confirmar
+
+- [ ] **El VAD se recupera tras un ruido constante.** Pasos en
+  [Hardware físico (solo el dueño)](#hardware-físico-solo-el-dueño).
+- [ ] Corte de internet: debe avisar y seguir escuchando; al volver la red, los
+  turnos funcionan otra vez.
+- [ ] Ctrl-C y después `pgrep -a 'arecord|aplay|piper'`: sin procesos.
+- [ ] Otra tarjeta (`--persona`): una sola voz Piper, misma mecánica.
 
 ### Pasos de la fase 1
 
@@ -289,7 +297,8 @@ banco; sin él se saltan y se informa.
 
 ## VAD adaptativo y reproducción (29/10)
 
-Pendiente de que el dueño lo valide con hardware real; no se marca como hecho.
+Detalles de la prueba del 29/10. El reproductor y el ruido del micrófono quedaron
+validados el 01/11/2026; los puntos 3 y 4 siguen pendientes.
 
 1. Reproductor: `aplay` se cuelga en esta máquina con el plugin ALSA-PipeWire
    (exit 137 a los 8 s, con WAV y con PCM crudo). `paplay` y `pw-play` terminan
