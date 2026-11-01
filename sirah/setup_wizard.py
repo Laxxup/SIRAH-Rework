@@ -194,6 +194,7 @@ def download_voice(destination: Path, assume_yes: bool = False) -> None:
             ):
                 response.raise_for_status()
                 descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                os.fchmod(descriptor, 0o600)
                 with os.fdopen(descriptor, "wb") as handle:
                     for chunk in response.iter_bytes(65536):
                         handle.write(chunk)
