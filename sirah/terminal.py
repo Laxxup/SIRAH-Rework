@@ -129,6 +129,11 @@ async def run_terminal(
             write("\n[FALLA] Algo falló al procesar el turno. Revisa el log.\n")
             continue
 
+        # Últimos espacios o roturas de línea no se perdieron mientras fluía.
+        if pending:
+            write(pending)
+            pending = ""
+
         # El LLM real lo construye build_agent: el parámetro `llm` suele ser None.
         truncated = getattr(agent.llm, "last_finish_reason", None) == "length"
         if not collected:
