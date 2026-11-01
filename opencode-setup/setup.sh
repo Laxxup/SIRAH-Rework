@@ -27,7 +27,7 @@ if [ ! -d .opencode ]; then
     exit 1
 fi
 
-grep -rl --include='*.md' -e '__ORCH_MODEL__' -e '__SUB_MODEL__' .opencode | while read -r f; do
+while IFS= read -r f; do
     sed -i "s|__ORCH_MODEL__|$ORCH_ESCAPED|g; s|__SUB_MODEL__|$SUB_ESCAPED|g" "$f"
     echo "actualizado: $f"
-done
+done < <(grep -rl --include='*.md' -e '__ORCH_MODEL__' -e '__SUB_MODEL__' .opencode)
