@@ -359,9 +359,11 @@ async def run_check(
     mic: ArecordMicrophone | None = None,
 ) -> int:
     mic = mic or ArecordMicrophone(device=config.audio_input_device)
-    write("Grabando 3 segundos... No hables durante el primer segundo.\n")
+    # Igual que doctor: la calibración adaptativa necesita el tiempo completo.
+    duration_s = max(3, config.vad_noise_calibration_ms // 1000 + 1)
+    write(f"Grabando {duration_s} segundos... No hables durante el primer segundo.\n")
     try:
-        frames = await mic.record(3.0)
+        frames = await mic.record(float(duration_s))
     except VoiceError as exc:
         write(f"[FALLA] {exc}\n")
         return 1
