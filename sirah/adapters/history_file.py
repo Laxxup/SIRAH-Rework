@@ -64,16 +64,24 @@ class HistoryFile:
     def __init__(self, path: Path) -> None:
         self.path = path
 
+    def _lock_path(self) -> Path:
+        return self.path.with_name(f".{self.path.name}.lock")
+
     def load(self, limit: int) -> list[Message]:
         if limit <= 0 or not self.path.exists():
             return []
         messages: deque[Message] = deque(maxlen=limit)
         try:
-            with self.path.open(encoding="utf-8") as handle:
-                for line in handle:
-                    parsed = self._parse(line)
-                    if parsed is not None:
-                        messages.append(parsed)
+            with open(self._lock_path(), "a+", encoding="utf-8") as lock_handle:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_SH)
+                try:
+                    with self.path.open(encoding="utf-8") as handle:
+                        for line in handle:
+                            parsed = self._parse(line)
+                            if parsed is not None:
+                                messages.append(parsed)
+                finally:
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
         except OSError as exc:
             logger.warning("No se pudo leer el historial %s: %s", self.path, exc.strerror)
             return []
