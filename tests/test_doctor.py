@@ -238,7 +238,6 @@ def test_doctor_audio_reports_a_hung_player(tmp_path: Path, monkeypatch) -> None
     config = _config(tmp_path)
     monkeypatch.setattr("sirah.doctor.shutil.which", lambda tool: f"/usr/bin/{tool}")
     monkeypatch.setattr("sirah.doctor.alsa_cards", lambda tool: 1)
-    monkeypatch.setattr("sirah.doctor.importlib.util.find_spec", lambda name: object())
 
     monkeypatch.setattr("sirah.doctor._run_player", lambda *args, **kwargs: None)
 
@@ -255,7 +254,6 @@ def test_doctor_audio_accepts_paplay_without_aplay(tmp_path: Path, monkeypatch) 
         lambda tool: None if tool == "aplay" else f"/usr/bin/{tool}",
     )
     monkeypatch.setattr("sirah.doctor.alsa_cards", lambda tool: 1)
-    monkeypatch.setattr("sirah.doctor.importlib.util.find_spec", lambda name: object())
     monkeypatch.setattr("sirah.doctor._run_player", lambda *a, **k: (0, b""))
 
     result = _check_audio(config)

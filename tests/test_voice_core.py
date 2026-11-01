@@ -8,7 +8,6 @@ from sirah.core.voice import (
     FRAME_BYTES,
     AdaptiveSpeechDetector,
     PhraseBuffer,
-    SpeechDetector,
     State,
     Supervisor,
     VoiceSegmenter,
@@ -72,17 +71,18 @@ def test_wav_bytes_keeps_the_pcm() -> None:
 
 
 def test_speech_detector_uses_the_rms_threshold() -> None:
-    detector = SpeechDetector(min_rms=500)
-    assert detector.is_speech(SILENCE) is False
-    assert detector.is_speech(TONE) is True
+    detector = AdaptiveSpeechDetector(min_start_rms=500)
+    _calibrate(detector, value=0)
+    assert detector(SILENCE) is False
+    assert detector(_level(12000)) is True
 
 
-def test_segmenter_accepts_the_real_speech_detector(monkeypatch) -> None:
-    detector = SpeechDetector(min_rms=500)
-    monkeypatch.setattr(detector, "_vad", None)
+def test_segmenter_accepts_the_adaptive_detector() -> None:
+    detector = AdaptiveSpeechDetector(min_start_rms=500)
+    _calibrate(detector, value=0)
     segmenter = VoiceSegmenter(detector, start_frames=1, silence_ms=20, prebuffer_ms=20)
     for _ in range(16):
-        assert segmenter.feed(TONE) is None
+        assert segmenter.feed(_level(12000)) is None
     assert segmenter.feed(SILENCE) is not None
 
 

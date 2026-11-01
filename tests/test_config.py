@@ -193,7 +193,6 @@ def test_quoted_values_and_comments(tmp_path: Path) -> None:
         ("LLM_REASONING_EFFORT", "max", "low, medium, high o vacío"),
         ("MEMORY_PERSIST", "maybe", "true o false"),
         ("LOG_LEVEL", "LOUD", "DEBUG"),
-        ("VAD_AGGRESSIVENESS", "7", "entre 0 y 3"),
     ],
 )
 def test_invalid_values(tmp_path: Path, key: str, value: str, message: str) -> None:

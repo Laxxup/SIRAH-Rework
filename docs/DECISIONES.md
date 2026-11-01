@@ -159,3 +159,7 @@ ojos con placa de banco:
   `arecord`, VAD con RMS y `webrtcvad`, STT de Groq, Piper y `aplay`, todo
   opt-in con `sirah voice`, half-duplex y audio solo en memoria. `make check`
   pasa con 218 tests; falta la validación física del dueño.
+- **31/10/2026:** se retira `webrtcvad` y `SpeechDetector`: el VAD real siempre
+  fue el adaptativo por RMS. Se eliminan la dependencia, `VAD_AGGRESSIVENESS` y
+  el aviso de `doctor` que exigía el paquete; `VoiceLoop` usa el detector
+  adaptativo por defecto.

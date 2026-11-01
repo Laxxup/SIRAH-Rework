@@ -648,13 +648,6 @@ def _check_audio(config: Config) -> Health:
             f"{inputs} tarjeta(s) de captura y {outputs or 0} de reproducción",
             "Conecta micrófono/altavoz y revisa `arecord -l` y `aplay -l`.",
         )
-    if importlib.util.find_spec("webrtcvad") is None:
-        return Health(
-            "Audio",
-            "warn",
-            f"{inputs} captura(s), {output_detail}; falta el VAD",
-            "Instala las dependencias de voz con `uv sync --all-extras`.",
-        )
     devices = []
     if config.audio_input_device:
         devices.append(f"entrada={config.audio_input_device}")

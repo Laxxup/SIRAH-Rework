@@ -81,33 +81,6 @@ def rms(frame: bytes) -> float:
     return math.sqrt(total / len(samples))
 
 
-class SpeechDetector:
-    """RMS configurable; usa webrtcvad si está instalado."""
-
-    def __init__(self, min_rms: int = 350, aggressiveness: int = 2) -> None:
-        self.min_rms = min_rms
-        self._vad = None
-        try:
-            import webrtcvad
-
-            self._vad = webrtcvad.Vad(aggressiveness)
-        except (ImportError, ValueError):
-            pass
-
-    def is_speech(self, frame: bytes) -> bool:
-        if rms(frame) < self.min_rms:
-            return False
-        if self._vad is None:
-            return True
-        try:
-            return bool(self._vad.is_speech(frame, SAMPLE_RATE))
-        except Exception:
-            return True
-
-    def __call__(self, frame: bytes) -> bool:
-        return self.is_speech(frame)
-
-
 class AdaptiveSpeechDetector:
     """Suelo de ruido adaptativo con histéresis y seguimiento lento."""
 
@@ -218,7 +191,7 @@ class VoiceSegmenter:
 
     def __init__(
         self,
-        detector: Callable[[bytes], bool] | SpeechDetector,
+        detector: Callable[[bytes], bool],
         *,
         start_frames: int = 3,
         silence_ms: int = 400,

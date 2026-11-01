@@ -19,7 +19,6 @@ from sirah.core.voice import (
     FRAME_MS,
     AdaptiveSpeechDetector,
     PhraseBuffer,
-    SpeechDetector,
     State,
     Supervisor,
     VoiceError,
@@ -60,7 +59,7 @@ class VoiceLoop:
         self.stt = stt
         self.tts = tts
         self.history = history
-        self.segmenter = segmenter or VoiceSegmenter(SpeechDetector())
+        self.segmenter = segmenter or VoiceSegmenter(AdaptiveSpeechDetector())
         self.supervisor = supervisor or Supervisor()
         self.write = write
 

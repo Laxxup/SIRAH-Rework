@@ -13,7 +13,6 @@ dependencies = [
 [project.optional-dependencies]
 voice = [
     "piper-tts>=1.8,<2",
-    "webrtcvad-wheels>=2.0.14,<3",
 ]
 
 [dependency-groups]

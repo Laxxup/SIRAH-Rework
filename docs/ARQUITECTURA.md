@@ -178,7 +178,7 @@ cámara ─> YuNet ─> suavizado ───────> core/agent.py ──> a
    imprime el problema con `Solución:` y cae al chat por texto.
 2. `arecord` entrega frames PCM crudos de 20 ms (16 kHz, mono, S16_LE). Cada
    turno arranca un proceso nuevo: al pararlo se vacía el buffer de la pausa.
-3. El VAD combina el umbral `VAD_MIN_RMS` con `webrtcvad` si está instalado.
+3. El VAD usa un suelo de ruido adaptativo por RMS, sin dependencias extra.
    El turno incluye el pre-roll, empieza tras `VAD_START_FRAMES` frames de voz
    y termina por `VAD_SILENCE_MS` de silencio o `VAD_MAX_TURN_MS`.
 4. El PCM se envuelve en WAV en memoria y se envía a Groq; el texto vuelve al
@@ -327,7 +327,6 @@ Las claves se muestran siempre enmascaradas.
 | `TTS_MODEL` | `models/voices/es_MX-claude-high.onnx` | `.onnx` y `.onnx.json` existentes |
 | `AUDIO_INPUT_DEVICE` | vacío | Nombre ALSA o vacío (defecto del sistema) |
 | `AUDIO_OUTPUT_DEVICE` | vacío | Nombre ALSA o vacío |
-| `VAD_AGGRESSIVENESS` | `2` | 0–3 |
 | `VAD_MIN_RMS` | `350` | 0–5000 |
 | `VAD_PREBUFFER_MS` | `300` | 100–1000 |
 | `VAD_START_FRAMES` | `3` | 1–10 (frames de 20 ms) |

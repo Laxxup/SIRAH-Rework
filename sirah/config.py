@@ -210,7 +210,6 @@ class Config:
     audio_output_device: str
     audio_player_command: str
     audio_player_command_set: bool
-    vad_aggressiveness: int
     vad_noise_calibration_ms: int
     vad_start_multiple: float
     vad_end_multiple: float
@@ -503,7 +502,6 @@ def load_config(
         audio_output_device=_text(values, "AUDIO_OUTPUT_DEVICE"),
         audio_player_command=_text(values, "AUDIO_PLAYER_COMMAND", "aplay"),
         audio_player_command_set=bool(_text(values, "AUDIO_PLAYER_COMMAND")),
-        vad_aggressiveness=_integer(values, "VAD_AGGRESSIVENESS", 2, 0, 3),
         vad_noise_calibration_ms=_integer(values, "VAD_NOISE_CALIBRATION_MS", 500, 100, 3000),
         vad_start_multiple=vad_start_multiple,
         vad_end_multiple=vad_end_multiple,
