@@ -84,12 +84,19 @@ class VoiceLoop:
         self.segmenter.start_session()
         await self.mic.start()
         try:
-            for _ in range(_CALIBRATION_MAX_FRAMES):
+            for _ in range(_CALIBRATION_MAX_FRAMES * 2):
                 self.segmenter.feed(await self.mic.read_frame())
                 if detector.noise_floor is not None:
                     return
         finally:
             await self.mic.stop()
+        if getattr(detector, "noise_floor", None) is None:
+            self.write(
+                "[AVISO] La calibración del VAD no quedó lista; se sigue en modo prudente.\n"
+            )
+            detector.pending_warning = getattr(detector, "pending_warning", None) or (
+                "Calibración del VAD incompleta."
+            )
 
     async def speak_greeting(self, text: str) -> None:
         if not text.strip():
