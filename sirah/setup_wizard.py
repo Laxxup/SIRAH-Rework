@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import getpass
-import hashlib
 import os
 import shutil
 import subprocess
@@ -19,6 +18,7 @@ from sirah.config import (
     is_groq_url,
     mask_secret,
     read_env_file,
+    sha256_file,
     update_env_file,
 )
 from sirah.doctor import find_piper
@@ -52,14 +52,6 @@ def ensure_settings_file(project_root: Path = PROJECT_ROOT) -> Path | None:
     shutil.copyfile(example, target)
     os.chmod(target, 0o600)
     return target
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _ask(prompt: str, default: str = "") -> str:
@@ -188,7 +180,7 @@ def download_voice(destination: Path, assume_yes: bool = False) -> None:
 
     for name, (expected_hash, expected_size) in VOICE_FILES.items():
         target = destination / name
-        if target.exists() and _sha256(target) == expected_hash:
+        if target.exists() and sha256_file(target) == expected_hash:
             print(f"  {name}: ya está y el SHA256 coincide.")
             continue
         url = f"{VOICE_BASE}/{name}"
@@ -204,7 +196,7 @@ def download_voice(destination: Path, assume_yes: bool = False) -> None:
                 with temporary.open("wb") as handle:
                     for chunk in response.iter_bytes(65536):
                         handle.write(chunk)
-            actual_hash = _sha256(temporary)
+            actual_hash = sha256_file(temporary)
             size = temporary.stat().st_size
             if actual_hash != expected_hash or size != expected_size:
                 temporary.unlink(missing_ok=True)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import tomllib
@@ -532,6 +533,15 @@ def _format_env_value(value: str) -> str:
         escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
         return f'"{escaped}"'
     return value
+
+
+def sha256_file(path: Path) -> str:
+    """SHA-256 hexadecimal de un archivo, en streaming."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def update_env_file(path: Path, updates: Mapping[str, str]) -> None:

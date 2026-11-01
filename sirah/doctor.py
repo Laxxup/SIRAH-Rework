@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import grp
-import hashlib
 import importlib.util
 import os
 import platform
@@ -29,6 +28,7 @@ from sirah.config import (
     active_card_path,
     identity_for,
     mask_secret,
+    sha256_file,
 )
 from sirah.core.health import Health
 from sirah.core.persona import PersonaError, load_persona
@@ -44,14 +44,6 @@ _SERVO_KEYS = {
     "II": ("open", "closed"),
 }
 _LABELS = {"ok": "OK", "warn": "AVISO", "fail": "FALLA", "off": "APAGADA"}
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _service_active(name: str) -> bool:
@@ -504,7 +496,7 @@ def _check_vision_model(config: Config) -> Health:
             "Restaura el .sha256 original.",
         )
     try:
-        actual = _sha256(model)
+        actual = sha256_file(model)
     except OSError as exc:
         return Health("Modelo YuNet", "fail", f"no se pudo leer el modelo: {exc.strerror}")
     if actual != expected:
