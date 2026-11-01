@@ -167,8 +167,14 @@ def load_persona(path: Path, *, user_name: str = "") -> Persona:
 
     char_name = _text(data, "nickname") or name
     resolved_user = user_name.strip() or "el usuario"
+    # El nombre visible también pasa por la misma limpieza (macros y líneas
+    # anuladoras), conservando al menos un nombre mostrable.
+    cleaned_name, removed_name = _clean_text(name, char_name, resolved_user)
+    if cleaned_name:
+        name = cleaned_name
+    discarded = removed_name
+
     cleaned: dict[str, str] = {}
-    discarded = 0
     for field in _FIELDS:
         cleaned[field], removed = _clean_text(_text(data, field), char_name, resolved_user)
         discarded += removed
