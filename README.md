@@ -49,12 +49,11 @@ No incluir activamente imágenes hasta tener una fuente propia y revisada.
 
 ```mermaid
 flowchart LR
-  user[Entrada texto o voz] --> agent[Agente]
-  agent --> prompt[Prompt]
-  prompt --> llm[LLM]
-  llm --> text[Texto limpio]
-  llm --> actions["Acciones ojos (hoy se descartan)"]
-  agent --> memory[Memoria e historial]
+  entrada["Texto o voz"] --> agente["Agente SIRAH"]
+  agente --> llm["Modelo de lenguaje"]
+  llm --> respuesta["Respuesta de texto o voz"]
+  agente --> memoria["Historial local (JSONL)"]
+  llm -.-> ojos["Ojos: comando de movimiento, pendiente Hito 2"]
 ```
 
 Lee `docs/ARQUITECTURA.md` para los flujos por texto y voz, y
