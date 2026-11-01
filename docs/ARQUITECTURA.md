@@ -159,7 +159,7 @@ cámara ─> YuNet ─> suavizado ───────> core/agent.py ──> a
 2. El estado pasa a `THINKING`; los ojos parpadean una vez si están listos.
 3. Se arma el prompt en este orden: contrato (formato, acciones, identidad del
    modo y consentimiento) > datos (idioma, nombre del usuario, modo de
-   identidad) > estilo por defecto > ficha de la tarjeta > reglas fijas. La
+   identidad) > ficha de la tarjeta > estilo por defecto > reglas fijas. La
    ficha manda sobre identidad, cuerpo y carácter; las reglas fijas quedan
    después para que ninguna tarjeta las anule. Incluyen honestidad mínima,
    hechos reales y `HISTORY`/`MEMORY` como contexto pasado. Después se añaden
