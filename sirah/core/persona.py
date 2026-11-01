@@ -111,8 +111,8 @@ def _card_data(parsed: object, path: Path) -> dict[str, object]:
 def _clean_text(text: str, char_name: str, user_name: str) -> tuple[str, int]:
     if not text:
         return "", 0
-    text = _CHAR_MACRO.sub(char_name, text)
-    text = _USER_MACRO.sub(user_name, text)
+    text = _CHAR_MACRO.sub(lambda _match: char_name, text)
+    text = _USER_MACRO.sub(lambda _match: user_name, text)
 
     kept: list[str] = []
     discarded = 0
