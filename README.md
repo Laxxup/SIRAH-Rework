@@ -132,12 +132,15 @@ SIRAH/
 
 ## Créditos y equipo
 
-- Institución: Tecnológico Nacional de México / TEC de Madero
-  *(TODO: confirmar nombre exacto)*.
-- Supervisor del proyecto: TODO.
-- Integrantes: TODO.
-- Taller: Comunidad Robótica *(TODO: responsables)*.
-- Contacto: correo TODO; Facebook, enlace secundario TODO.
+*(Aquí va: crédito de la institución, autoría y contacto vía GitHub.)*
+
+- Proyecto: S.I.R.A.H.
+- Institución: Instituto Tecnológico de Ciudad Madero (ITCM).
+- Repositorio: https://github.com/Laxxup/SIRAH-Rework
+- Autor y supervisor: https://github.com/Laxxup
+- Taller de alumnos: Comunidad Robótica.
+- Contacto: por GitHub Issues o discusiones del repositorio.
+- Hardware pendiente: fotos, medición de fuente, reconexión y resistencia (HIL).
 
 ## Licencias
 
@@ -145,8 +148,9 @@ SIRAH/
 - Firmware y calibración: revisa `firmware/README.md`.
 - Piper y modelos: licencias propias.
 - YuNet: MIT (`models/LICENSE.yunet`).
-- EyeMech: solo referencia, no incluye archivos STL.
+- EyeMech: solo referencia; no incluye archivos STL.
 
 ## Contacto
 
-TODO: correo directo y enlace del repositorio.
+- Enlace al repositorio: https://github.com/Laxxup/SIRAH-Rework
+- Perfil del mantenedor: https://github.com/Laxxup
