@@ -75,7 +75,7 @@ class VoiceLoop:
                     raise
                 self.write(f"[FALLA] {exc}\n")
                 await asyncio.sleep(min(2 ** (failures - 1), 30))
-            except Exception as exc:
+            except Exception:
                 logger.exception("Fallo inesperado durante un turno de voz")
                 raise
 
