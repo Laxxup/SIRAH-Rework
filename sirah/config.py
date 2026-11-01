@@ -566,17 +566,21 @@ def update_env_file(path: Path, updates: Mapping[str, str]) -> None:
     last: dict[str, int] = {}
     for index, line in enumerate(lines):
         match = _ENV_LINE.match(line.strip())
-        if match and match.group(1) in remaining:
+        if match:
             last[match.group(1)] = index
 
     result: list[str] = []
     for index, line in enumerate(lines):
         match = _ENV_LINE.match(line.strip())
-        if match and match.group(1) in remaining:
+        if match:
             key = match.group(1)
+            # Se conserva solo la última aparición de cada clave, incluso si no
+            # se actualiza; así el archivo no acumula duplicados.
             if last[key] == index:
-                result.append(f"{key}={_format_env_value(remaining.pop(key))}")
-            # Las apariciones anteriores de la misma clave se descartan.
+                if key in remaining:
+                    result.append(f"{key}={_format_env_value(remaining.pop(key))}")
+                else:
+                    result.append(line)
         else:
             result.append(line)
     for key, value in remaining.items():
