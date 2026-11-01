@@ -1,10 +1,14 @@
 # AGENTS.md — SIRAH
 
-Un solo proceso Python 3.12 con `asyncio`. Chat por texto y voz; visión y ojos
-todavía no existen físicamente, aunque `terminal.py` parsea `{{look}}`, `{{blink}}`,
-`{{tired}}` y `{{center}}` y los descarta. Hitos implementados: 0, 1 y 4. El
-hito 2 (ojos) es el siguiente. Toda la documentación importante está en
-`docs/`.
+> Contexto para sesiones de OpenCode. Dueño (Luis): español docs/comentarios/mensajes; código e IDs inglés. Si algo contradice una suposición, gana este archivo.
+
+Un solo proceso Python 3.12 con `asyncio`. Chat por texto y voz; ojos y visión no
+existen físicamente, aunque `terminal.py` parsea `{{look}}`, `{{blink}}`,
+`{{tired}}` y `{{center}}` y los descarta. Hitos: 0, 1 y 4. No inventes código
+de ojos o visión. Docs canónicos: `docs/ARQUITECTURA.md` manda en estructura;
+`docs/PROTOCOL.md` y `docs/HARDWARE.md` derivan del firmware;
+`docs/PENDIENTES.md` es verdad de lo no validado; actualiza
+`docs/DECISIONES.md` si cambias algo estructural.
 
 Español para documentación, comentarios y mensajes al usuario; inglés para código
 e identificadores.
@@ -27,7 +31,8 @@ uv run pytest tests/test_agent.py -q
 uv run pytest tests/test_agent.py::test_name -q
 ```
 
-Ejecuta `uv sync` antes de tests/CLI. Instala `uv` en `~/.local/bin` si falta.
+Ejecuta `uv sync` antes de tests/CLI. Instala `uv` en `~/.local/bin` si falta (no hay `.venv` versionado).
+`opencode-setup/` es andamiaje de agentes; la instalación real es `uv sync` + `uv run sirah setup`.
 `make check` debe pasar sin red, sin hardware y sin `BENCH_PORT`.
 
 ## Arquitectura rápida
@@ -101,7 +106,7 @@ Ejecuta `uv sync` antes de tests/CLI. Instala `uv` en `~/.local/bin` si falta.
   pruebas.
 - Ejecutar pytest desde la raíz: imports como `from tests.fake_llm import`.
 - Marker `hardware` para pruebas de banco; sin `BENCH_PORT` se saltan y se
-  informa.
+  informa. No debilitar tests: test de hardware inejecutable se salta, no se borra.
 - `models/voices/` no versionado; `sirah setup` descarga la voz.
 
 ## Trabajo
