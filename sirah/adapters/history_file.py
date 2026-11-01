@@ -33,7 +33,7 @@ def history_path(data_dir: Path, persona_path: Path) -> Path:
     """
     stem = persona_path.stem.removesuffix(".persona")
     safe = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip(".") or "persona"
-    signature = hashlib.sha256(str(persona_path.parent).encode("utf-8")).hexdigest()[:8]
+    signature = hashlib.sha256(str(persona_path.parent).encode("utf-8")).hexdigest()
     return data_dir / "history" / f"{safe}_{signature}.jsonl"
 
 
