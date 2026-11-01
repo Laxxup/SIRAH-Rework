@@ -174,8 +174,14 @@ def identity_for(settings: PersonaSettings, card_path: Path) -> str:
     override = settings.cards.get(str(card_path))
     if override is None:
         override = settings.cards.get(str(card_path.resolve()))
+    # Compatibilidad con claves solo por nombre, sin mezclar modos cuando dos
+    # tarjetas homónimas viven en carpetas distintas.
     if override is None:
-        override = settings.cards.get(card_path.name)
+        by_name = [
+            value for key, value in settings.cards.items() if Path(key).name == card_path.name
+        ]
+        if len(by_name) == 1:
+            override = by_name[0]
     return override if override in _IDENTITIES else settings.identity
 
 
@@ -490,7 +496,7 @@ def load_config(
         llm_max_tokens=_integer(values, "LLM_MAX_TOKENS", 1024, 32, 4096),
         llm_temperature=_number(values, "LLM_TEMPERATURE", 0.6, 0, 2),
         llm_reasoning_effort=reasoning_effort,
-        user_name=_text(values, "USER_NAME"),
+        user_name=_text(values, "USER_NAME").replace("\r", " ").replace("\n", " "),
         persona_path=_path(values, "SIRAH_PERSONA", settings.active),
         persona_path_set=bool(_text(values, "SIRAH_PERSONA")),
         persona_settings=settings,

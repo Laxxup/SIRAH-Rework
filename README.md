@@ -54,8 +54,10 @@ Tarjeta activa, idioma e identidad se eligen en `config/sirah.toml`
 `--persona` tiene prioridad. Una tarjeta rota no impide arrancar.
 
 SIRAH conserva por defecto los últimos 12 mensajes por tarjeta
-(`MEMORY_MESSAGES`, `MEMORY_PERSIST=true`); el saludo de arranque no se guarda.
-`USER_NAME` entra como dato. Los logs usan `$XDG_DATA_HOME/sirah/logs/sirah.log`,
+(`MEMORY_MESSAGES`, `MEMORY_PERSIST=true`); el saludo de arranque se guarda como primer turno `assistant`.
+`USER_NAME` entra como dato y es global para todas las tarjetas. El idioma y la
+identidad de `config/sirah.toml` también son globales y sobreviven al cambiar de
+tarjeta. Los logs usan `$XDG_DATA_HOME/sirah/logs/sirah.log`,
 con `--debug` y rotación de 3 archivos de 1 MB. Las etiquetas `{{look}}`,
 `{{blink}}`, `{{tired}}` y `{{center}}` se quitan del texto siempre.
 

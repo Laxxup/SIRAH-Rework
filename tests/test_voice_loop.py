@@ -354,7 +354,7 @@ def test_voice_falls_back_to_text_after_five_mic_failures(monkeypatch) -> None:
         if len(delays) > 10:
             raise AssertionError("run() no se rindió nunca")
 
-    async def fake_greeting(agent, persona, config) -> str:
+    async def fake_greeting(persona) -> str:
         return ""
 
     called: list[dict[str, object]] = []
@@ -439,7 +439,7 @@ def test_run_voice_uses_the_configured_player(tmp_path: Path, monkeypatch) -> No
 
 
 def test_mic_banner_is_printed_after_the_greeting(tmp_path: Path, monkeypatch) -> None:
-    async def fake_greeting(agent, persona, config) -> str:
+    async def fake_greeting(persona) -> str:
         return "Hola."
 
     async def fake_run(self) -> None:
@@ -690,7 +690,7 @@ def test_voice_calibrates_before_the_greeting(tmp_path: Path, monkeypatch) -> No
     async def fake_calibrate(self) -> None:
         calls.append("calibrate")
 
-    async def fake_greeting(agent, persona, config) -> str:
+    async def fake_greeting(persona) -> str:
         calls.append("greeting")
         return "Hola."
 

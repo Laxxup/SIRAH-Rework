@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
-import logging
 import sys
 
 from sirah.adapters.history_file import HistoryFile, history_path, migrate_default_history
@@ -13,8 +11,7 @@ from sirah.core.agent import Agent
 from sirah.core.memory import Memory
 from sirah.core.persona import Persona
 
-logger = logging.getLogger("sirah.session")
-GREETING_TIMEOUT_S = 8.0
+# Se mantiene la firma con agent/config para no romper terminales y voz.
 
 
 def build_agent(
@@ -56,16 +53,26 @@ def build_agent(
     return agent, history
 
 
-async def opening_greeting(agent: Agent, persona: Persona, config: Config) -> str:
-    try:
-        greeting = await asyncio.wait_for(
-            agent.greet(),
-            timeout=min(GREETING_TIMEOUT_S, config.llm_timeout_s),
-        )
-    except Exception:
-        logger.debug("No se pudo generar el saludo; se usa el de respaldo", exc_info=True)
-        greeting = ""
-    return greeting or f"Hola, soy {persona.display_name}. ¿De qué quieres hablar?"
+async def opening_greeting(persona: Persona) -> str:
+    first = persona.first_mes.strip()
+    if first:
+        if len(first) > 600:
+            first = first[:600].rstrip()
+        return first
+    return f"Hola, soy {persona.display_name}. ¿De qué quieres hablar?"
+
+
+def record_opening_greeting(agent: object, history: object, greeting: str) -> None:
+    """Guarda el saludo inicial como primer turno assistant, sin llamar al LLM."""
+    if not greeting or not greeting.strip():
+        return
+    memory = getattr(agent, "memory", None)
+    if memory is None or memory.messages:
+        return
+    memory.add("assistant", greeting)
+    append = getattr(history, "append", None)
+    if append is not None:
+        append("assistant", greeting)
 
 
 def _stdout(text: str) -> None:

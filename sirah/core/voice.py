@@ -29,7 +29,7 @@ _STABLE_SILENCE_FRAMES = 20
 # Tras 5 s de silencio continuo se vuelve a calibrar el suelo.
 _LONG_SILENCE_FRAMES = 250
 
-_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡«\"(….]|$)")
+_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+(?=[A-ZÁÉÍÓÚÜÑ¿¡«\"(….]|$)|(?<=[.!?…])(?=[A-ZÁÉÍÓÚÜÑ])")
 
 
 class VoiceError(Exception):

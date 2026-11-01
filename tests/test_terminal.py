@@ -98,7 +98,7 @@ def _run(
 
 def test_chat_turn_streams_and_is_persisted(tmp_path: Path) -> None:
     persona = _persona(first_mes="Hola, soy SIRAH.")
-    llm = ScriptedLLM([["Hola, soy SIRAH."], ["Buenas ", "tardes."]])
+    llm = ScriptedLLM([["Buenas ", "tardes."]])
     output = _run(tmp_path, persona, llm, ["hola", "/salir"])
 
     assert "Hola, soy SIRAH." in output
@@ -107,6 +107,7 @@ def test_chat_turn_streams_and_is_persisted(tmp_path: Path) -> None:
 
     history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
     assert [(item.role, item.content) for item in history.load(10)] == [
+        ("assistant", "Hola, soy SIRAH."),
         ("user", "hola"),
         ("assistant", "Buenas tardes."),
     ]
@@ -202,6 +203,7 @@ def test_markdown_is_cleaned_before_history(tmp_path: Path) -> None:
     assert "**" not in output
     history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
     assert [(item.role, item.content) for item in history.load(10)] == [
+        ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
         ("user", "hola"),
         ("assistant", "Hola mundo"),
     ]
@@ -217,6 +219,7 @@ def test_llm_error_keeps_the_chat_open(tmp_path: Path) -> None:
 
     history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
     assert [(item.role, item.content) for item in history.load(10)] == [
+        ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
         ("user", "otra vez"),
         ("assistant", "Vale."),
     ]
@@ -262,7 +265,22 @@ def test_empty_response_shows_a_warning_and_is_not_stored(tmp_path: Path) -> Non
     assert "[AVISO]" in output
 
     history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
-    assert history.load(10) == []
+    assert [(item.role, item.content) for item in history.load(10)] == [
+        ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
+    ]
+
+
+def test_opening_greeting_is_persisted_as_first_assistant_turn(tmp_path: Path) -> None:
+    persona = _persona(first_mes="Preparo té. Bienvenido.")
+    llm = ScriptedLLM([])
+    output = _run(tmp_path, persona, llm, ["/salir"])
+
+    assert "Preparo té. Bienvenido." in output
+
+    history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
+    assert [(item.role, item.content) for item in history.load(10)] == [
+        ("assistant", "Preparo té. Bienvenido."),
+    ]
 
 
 def test_history_is_loaded_on_the_next_run(tmp_path: Path) -> None:
@@ -275,13 +293,15 @@ def test_history_is_loaded_on_the_next_run(tmp_path: Path) -> None:
     messages = second_llm.calls[0]
     assert [message.role for message in messages] == [
         "system",
+        "assistant",
         "user",
         "assistant",
         "user",
     ]
-    assert messages[1].content == "hola"
-    assert messages[2].content == "uno"
-    assert messages[3].content == "sigue"
+    assert messages[1].content == "Hola, soy SIRAH. ¿De qué quieres hablar?"
+    assert messages[2].content == "hola"
+    assert messages[3].content == "uno"
+    assert messages[4].content == "sigue"
 
 
 def test_disabled_persistence_creates_no_history(tmp_path: Path) -> None:
@@ -302,12 +322,12 @@ def test_strict_robot_mode_is_announced_and_card_mode_is_default(tmp_path: Path)
         first_mes="Hola, soy SIRAH.",
         warnings=("La tarjeta es muy larga.",),
     )
-    llm = ScriptedLLM([["Hola."]])
+    llm = ScriptedLLM([["Vale."]])
     output = _run(
         tmp_path,
         persona,
         llm,
-        ["/salir"],
+        ["hola", "/salir"],
         identity="robot",
         language="en",
     )
@@ -316,16 +336,18 @@ def test_strict_robot_mode_is_announced_and_card_mode_is_default(tmp_path: Path)
     assert "Modo personaje" not in output
     assert output.count("La tarjeta es muy larga.") == 1
     assert "[AVISO] La tarjeta es muy larga." in output
+    assert "SIRAH> Vale." in output
     assert "Modo de identidad: robot." in llm.calls[0][0].content
     assert "inglés (en)" in llm.calls[0][0].content
 
 
 def test_card_mode_does_not_print_a_mode_banner(tmp_path: Path) -> None:
-    llm = ScriptedLLM([["Hola."]])
-    output = _run(tmp_path, _persona(first_mes="Hola."), llm, ["/salir"])
+    llm = ScriptedLLM([["Vale."]])
+    output = _run(tmp_path, _persona(first_mes="Hola."), llm, ["hola", "/salir"])
 
     assert "Modo personaje" not in output
     assert "Modo robot estricto" not in output
+    assert "SIRAH> Vale." in output
     assert "Modo de identidad: card." in llm.calls[0][0].content
 
 
@@ -355,12 +377,13 @@ def test_default_history_is_migrated_on_start(tmp_path: Path) -> None:
     ]
 
 
-def test_greeting_failure_uses_the_fallback(tmp_path: Path) -> None:
+def test_fixed_greeting_does_not_call_the_llm(tmp_path: Path) -> None:
     persona = _persona(first_mes="Hola, soy SIRAH.")
-    llm = ScriptedLLM([LLMError("sin red"), ["Vale."]])
+    llm = ScriptedLLM([["Vale."]])
     output = _run(tmp_path, persona, llm, ["hola", "/salir"])
 
     assert "Hola, soy SIRAH." in output
+    assert "¿De qué quieres hablar?" not in output
     assert "SIRAH> Vale." in output
 
 

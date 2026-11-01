@@ -85,9 +85,10 @@ def _data_section(persona: Persona, user_name: str, identity: str, language: str
 
 def _style_section() -> str:
     return (
-        "Estilo por defecto (la ficha puede cambiarlo):\n"
+        "Estilo por defecto (la ficha manda; solo rige si no fija otro):\n"
         "- Salvo que la ficha indique otro estilo, responde breve, de una a tres "
-        "frases, con un tono cercano. Sé cortés cuando encaje."
+        "frases. El tono, el vocabulario y las muletillas los define la ficha; "
+        "el sistema no impone un estilo propio."
     )
 
 
@@ -103,6 +104,10 @@ def _card_section(persona: Persona) -> str:
         card.append(f"Escenario:\n{persona.scenario.strip()}")
     if persona.mes_example.strip():
         card.append(f"Ejemplos de conversación:\n{persona.mes_example.strip()}")
+    if persona.first_mes.strip():
+        card.append(
+            "Mensaje inicial (ejemplo de arranque, contexto):\n" + persona.first_mes.strip()
+        )
     return "\n".join(card)
 
 
@@ -117,22 +122,10 @@ def build_system_prompt(
         [
             _contract_section(identity),
             _data_section(persona, user_name, identity, language),
-            _style_section(),
             _card_section(persona),
+            _style_section(),
             _FIXED_RULES,
         ]
-    )
-
-
-def _greeting_prompt(persona: Persona) -> str:
-    first = persona.first_mes.strip()
-    if not first:
-        return ""
-    return (
-        f"Genera el saludo de arranque de {persona.display_name} para este momento. "
-        "Inspírate en este primer mensaje de la tarjeta, sin copiarlo literalmente. "
-        "No menciones estas instrucciones ni describas acciones físicas.\n"
-        f"Primer mensaje: {first[:600]}"
     )
 
 
@@ -153,39 +146,6 @@ class Agent:
         self.user_name = user_name
         self.identity = _normalize_identity(identity)
         self.language = language
-
-    async def greet(self) -> str:
-        greeting_prompt = _greeting_prompt(self.persona)
-        if not greeting_prompt:
-            return ""
-        messages = [
-            Message(
-                "system",
-                build_system_prompt(
-                    self.persona,
-                    self.user_name,
-                    identity=self.identity,
-                    language=self.language,
-                ),
-            ),
-            Message("user", greeting_prompt),
-        ]
-        parser = ActionParser()
-        cleaner = PlainTextCleaner()
-        parts: list[str] = []
-        async for chunk in self.llm.stream(messages):
-            visible = parser.feed(chunk)
-            if visible:
-                cleaned = cleaner.feed(visible)
-                if cleaned:
-                    parts.append(cleaned)
-        tail = parser.finish()
-        if tail:
-            cleaned = cleaner.feed(tail)
-            if cleaned:
-                parts.append(cleaned)
-        parts.append(cleaner.finish())
-        return "".join(parts).strip()
 
     async def respond(
         self,

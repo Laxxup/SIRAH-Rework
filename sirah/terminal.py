@@ -12,7 +12,13 @@ from sirah.adapters.llm import LLMClient, LLMError
 from sirah.config import Config
 from sirah.core.actions import Action
 from sirah.core.persona import Persona
-from sirah.session import _stdout, _token_warning, build_agent, opening_greeting
+from sirah.session import (
+    _stdout,
+    _token_warning,
+    build_agent,
+    opening_greeting,
+    record_opening_greeting,
+)
 
 logger = logging.getLogger("sirah.terminal")
 
@@ -34,7 +40,7 @@ async def _read_line(prompt: str) -> str:
     def worker() -> None:
         try:
             line = input(prompt)
-        except Exception as exc:
+        except (Exception, KeyboardInterrupt) as exc:
             callback = (deliver, future.set_exception, exc)
         else:
             callback = (deliver, future.set_result, line)
@@ -80,8 +86,9 @@ async def run_terminal(
         write("Aviso: la visión se activa en el hito 3; ahora solo hay texto.\n")
     write("\n")
 
-    greeting = await opening_greeting(agent, persona, config)
+    greeting = await opening_greeting(persona)
     write(f"{greeting}\n\n")
+    record_opening_greeting(agent, history, greeting)
 
     while True:
         try:

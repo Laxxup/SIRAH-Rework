@@ -115,6 +115,7 @@ class LLMClient:
             "Content-Type": "application/json",
         }
         timeout = httpx.Timeout(self.timeout_s, connect=min(10.0, self.timeout_s))
+        self.last_finish_reason = None
 
         try:
             async with (

@@ -26,7 +26,13 @@ from sirah.core.voice import (
     rms,
 )
 from sirah.doctor import alsa_cards, find_piper, resolve_player
-from sirah.session import _stdout, _token_warning, build_agent, opening_greeting
+from sirah.session import (
+    _stdout,
+    _token_warning,
+    build_agent,
+    opening_greeting,
+    record_opening_greeting,
+)
 from sirah.terminal import run_terminal
 
 logger = logging.getLogger("sirah.voice")
@@ -347,7 +353,8 @@ async def run_voice(
         await loop.calibrate()
     except VoiceError as exc:
         write(f"[AVISO] {exc}\n")
-    greeting = await opening_greeting(agent, persona, config)
+    greeting = await opening_greeting(persona)
+    record_opening_greeting(agent, history, greeting)
     try:
         await loop.speak_greeting(greeting)
         write("Micrófono activo. Ctrl-C para salir\n")

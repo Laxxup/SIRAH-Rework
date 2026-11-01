@@ -39,6 +39,11 @@ _NULLIFY = (
     re.compile(r"\blimite de tokens\b", re.IGNORECASE),
     re.compile(r"\bdescrib(?:e|ir|a) (?:la |su )?(?:ropa|cuerpo)\b", re.IGNORECASE),
     re.compile(r"\bdescribe (?:clothing|body)\b", re.IGNORECASE),
+    # Portugués (idioma soportado).
+    re.compile(r"\bsem restrições\b", re.IGNORECASE),
+    re.compile(r"\bassuma consentimento\b", re.IGNORECASE),
+    re.compile(r"\bconsentimento presumido\b", re.IGNORECASE),
+    re.compile(r"\bignore (?:todas )?as instruções (?:anteriores|prévias)\b", re.IGNORECASE),
 )
 
 _ENGLISH = re.compile(
@@ -127,8 +132,8 @@ def _clean_text(text: str, char_name: str, user_name: str) -> tuple[str, int]:
 def _looks_english(text: str) -> bool:
     english = len(_ENGLISH.findall(text))
     spanish = len(_SPANISH.findall(text))
-    # Dos señales claras ya bastan para una ficha corta sin primer mensaje.
-    return english >= 2 and english > spanish
+    # Evita marcar como inglés una tarjeta corta con préstamos sueltos.
+    return english >= 3 and english > spanish + 1
 
 
 def load_persona(path: Path, *, user_name: str = "") -> Persona:
@@ -165,17 +170,28 @@ def load_persona(path: Path, *, user_name: str = "") -> Persona:
     if not name:
         raise PersonaError(f"{path}: la tarjeta no tiene un campo 'name' válido")
 
-    char_name = _text(data, "nickname") or name
-    resolved_user = user_name.strip() or "el usuario"
+    resolved_user = (user_name or "").strip().replace("\r", " ").replace("\n", " ")
+    resolved_user = resolved_user or "el usuario"
+    raw_nickname = _text(data, "nickname")
+    # Limpia nickname primero, para que el resto use el nombre final en macros.
+    cleaned_nickname, removed_nickname = _clean_text(
+        raw_nickname, raw_nickname or name, resolved_user
+    )
+    char_name = cleaned_nickname or name
     # El nombre visible también pasa por la misma limpieza (macros y líneas
-    # anuladoras), conservando al menos un nombre mostrable.
+    # anuladoras): si todo se descarta, la tarjeta no tiene un nombre válido.
     cleaned_name, removed_name = _clean_text(name, char_name, resolved_user)
-    if cleaned_name:
-        name = cleaned_name
-    discarded = removed_name
+    discarded = removed_nickname + removed_name
+    name = cleaned_name
+    if not name:
+        raise PersonaError(f"{path}: la tarjeta no tiene un campo 'name' válido")
 
     cleaned: dict[str, str] = {}
+    cleaned["nickname"] = cleaned_nickname
+
     for field in _FIELDS:
+        if field == "nickname":
+            continue
         cleaned[field], removed = _clean_text(_text(data, field), char_name, resolved_user)
         discarded += removed
 
@@ -199,6 +215,8 @@ def load_persona(path: Path, *, user_name: str = "") -> Persona:
         warnings.append(
             "La tarjeta incluye character_book; SIRAH lo ignora (solo usa la ficha básica)."
         )
+    if not cleaned["personality"].strip() and cleaned["description"].strip():
+        warnings.append("La tarjeta no define personalidad; las respuestas pueden sonar genéricas.")
 
     return Persona(
         path=path,

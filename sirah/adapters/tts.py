@@ -35,15 +35,16 @@ def load_voice(model: str):
 
 def render_wav(voice, phrase: str) -> bytes:
     """Sintetiza una frase y la envuelve en WAV con la frecuencia del modelo."""
-    pcm = b""
+    chunks: list[bytes] = []
     rate = 0
     try:
         for chunk in voice.synthesize(phrase):
             rate = chunk.sample_rate
-            pcm += chunk.audio_int16_bytes
+            chunks.append(chunk.audio_int16_bytes)
+        pcm = b"".join(chunks)
     except Exception as exc:
         raise VoiceError(f"Piper no pudo sintetizar la voz. {_MODEL_HINT}") from exc
-    if not pcm:
+    if not chunks:
         raise VoiceError(f"Piper no devolvió audio. {_MODEL_HINT}")
     return wav_bytes(pcm, rate=rate)
 
