@@ -768,7 +768,14 @@ def _check_vad(config: Config) -> Health:
     )
     for frame in frames:
         detector(frame)
-    floor = detector.noise_floor or 0.0
+    if detector.noise_floor is None:
+        return Health(
+            "VAD",
+            "warn",
+            "el micrófono no dio suficiente audio para calibrar",
+            "Repite la medición o baja VAD_NOISE_CALIBRATION_MS.",
+        )
+    floor = detector.noise_floor
     detail = (
         f"suelo {floor:.0f} RMS · umbrales inicio "
         f"{detector.start_threshold:.0f}, fin {detector.end_threshold:.0f}"
