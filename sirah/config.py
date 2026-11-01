@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import hashlib
 import os
 import re
@@ -555,41 +557,46 @@ def update_env_file(path: Path, updates: Mapping[str, str]) -> None:
     """Actualiza o añade claves sin borrar comentarios ni otros valores."""
     path = path.expanduser()
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        lines = path.read_text(encoding="utf-8").splitlines()
-    elif (PROJECT_ROOT / ".env.example").exists():
-        lines = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8").splitlines()
-    else:
-        lines = ["# Configuración de SIRAH."]
+    lock_path = path.with_name(f".{path.name}.lock")
+    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    with os.fdopen(descriptor, "a+", encoding="utf-8") as lock_handle:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+        try:
+            if path.exists():
+                lines = path.read_text(encoding="utf-8").splitlines()
+            elif (PROJECT_ROOT / ".env.example").exists():
+                lines = (PROJECT_ROOT / ".env.example").read_text(encoding="utf-8").splitlines()
+            else:
+                lines = ["# Configuración de SIRAH."]
 
-    remaining = dict(updates)
-    last: dict[str, int] = {}
-    for index, line in enumerate(lines):
-        match = _ENV_LINE.match(line.strip())
-        if match:
-            last[match.group(1)] = index
+            remaining = dict(updates)
+            last: dict[str, int] = {}
+            for index, line in enumerate(lines):
+                match = _ENV_LINE.match(line.strip())
+                if match:
+                    last[match.group(1)] = index
 
-    result: list[str] = []
-    for index, line in enumerate(lines):
-        match = _ENV_LINE.match(line.strip())
-        if match:
-            key = match.group(1)
-            # Se conserva solo la última aparición de cada clave, incluso si no
-            # se actualiza; así el archivo no acumula duplicados.
-            if last[key] == index:
-                if key in remaining:
-                    result.append(f"{key}={_format_env_value(remaining.pop(key))}")
+            result: list[str] = []
+            for index, line in enumerate(lines):
+                match = _ENV_LINE.match(line.strip())
+                if match:
+                    key = match.group(1)
+                    if last[key] == index:
+                        if key in remaining:
+                            result.append(f"{key}={_format_env_value(remaining.pop(key))}")
+                        else:
+                            result.append(line)
                 else:
                     result.append(line)
-        else:
-            result.append(line)
-    for key, value in remaining.items():
-        result.append(f"{key}={_format_env_value(value)}")
+            for key, value in remaining.items():
+                result.append(f"{key}={_format_env_value(value)}")
 
-    temporary = path.with_name(f".{path.name}.tmp")
-    descriptor = os.open(temporary, os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0o600)
-    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(result) + "\n")
-    # Un .tmp viejo conserva su modo: O_CREAT no lo cambia.
-    os.chmod(temporary, 0o600)
-    os.replace(temporary, path)
+            temporary = path.with_name(f".{path.name}.tmp")
+            descriptor = os.open(temporary, os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0o600)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.write("\n".join(result) + "\n")
+            # Un .tmp viejo conserva su modo: O_CREAT no lo cambia.
+            os.chmod(temporary, 0o600)
+            os.replace(temporary, path)
+        finally:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
