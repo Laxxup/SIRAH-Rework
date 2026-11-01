@@ -32,7 +32,7 @@ uv run pytest tests/test_agent.py::test_name -q
 
 No hay `.venv` versionado: ejecuta `uv sync` antes de tests o CLI. Si `uv` no
 está en PATH, instálalo en `~/.local/bin`. `make check` debe pasar sin red, sin
-hardware y sin `BENCH_PORT`. 
+hardware y sin `BENCH_PORT`.
 
 ## Arquitectura rápida
 

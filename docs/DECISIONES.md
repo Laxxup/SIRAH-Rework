@@ -23,11 +23,11 @@ Estados:
 | A3 | STT | Groq `whisper-large-v3-turbo`, español | Buen español, sin instalar modelos; 8 h de audio/día en el plan gratuito | **Aprobada** (24/10/2026) |
 | A4 | TTS | Piper + voz `es_MX-claude-high`, invocado como proceso | Local, rápido en Pi, sin cuota; el motor GPL queda aislado | **Aprobada** (24/10/2026) |
 | A5 | Visión | YuNet 2023mar con `opencv-python-headless<5` | Ya está en el repo; OpenCV 5 rompe la entrada fija del modelo | **Aprobada** (24/10/2026) |
-| A6 | VAD | WebRTC VAD + umbral RMS | Wheel aarch64, sin modelo ni cuota; suficiente para micrófono cercano | **Aprobada** (24/10/2026) |
+| A6 | VAD | Umbral adaptativo por RMS sin dependencia extra | Simple y sin rueda o cuota extra; `webrtcvad` y `VAD_AGGRESSIVENESS` se retiraron (31/10/2026) | **Aprobada** (24/10/2026) |
 | A7 | Palabra de activación | Omitir en v1 | Los modelos de openWakeWord son solo en inglés y no comerciales | **Aprobada** (24/10/2026) |
 | A8 | Memoria | Historial local JSONL primero; Zep opt-in y **no** en v1 | Zep añade nube, clave y límites; el historial local cubre la continuidad | **Aprobada** (24/10/2026) |
 | A9 | Panel web | Starlette + uvicorn como extra en el hito 7, sin build de frontend | Capa fina sobre el mismo núcleo; se puede omitir sin afectar a SIRAH | **Aprobada** (24/10/2026) |
-| A10 | Dependencias base | `httpx`, `pyserial`; extras `vision`, `voice`, `web`; versiones fijas en `uv.lock` | Pocas, con wheel x86_64 y aarch64 | **Aprobada** (24/10/2026) |
+| A10 | Dependencias base | `httpx`, `pyserial`; extra `voice` en v1; `vision` y `web` pendientes mientras se implementan sus hitos; versiones fijas en `uv.lock` | Pocas, con rueda x86_64 y aarch64 | **Aprobada** (24/10/2026) |
 | A11 | Autotest y `NOD` | Autotest solo por comando explícito; no enviar `NOD` | El firmware no implementa `NOD`; mover servos sin avisar está prohibido | **Aprobada** (24/10/2026) |
 | A12 | La tarjeta manda, con piso fijo | La personalidad, el cuerpo, el afecto, el saludo y la longitud dependen de la tarjeta; el código solo impone formato, consentimiento, honestidad mínima y contexto | Ninguna regla de personalidad es global; cambiar de personaje es cambiar un archivo | **Aprobada** (27/10/2026) |
 

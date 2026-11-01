@@ -313,6 +313,7 @@ Las claves se muestran siempre enmascaradas.
 | `USER_NAME` | vacío | Texto libre; vacío = no se añade al prompt |
 | `SIRAH_PERSONA` | vacío | Temporal: ruta a una tarjeta; tiene prioridad sobre `[persona] active` |
 | `SIRAH_DATA_DIR` | `$XDG_DATA_HOME/sirah` | Ruta escribible; se crea con `0700` |
+| `SIRAH_SETTINGS_FILE` | vacío | Ruta alternativa a `config/sirah.toml` (útil en tests) |
 | `MEMORY_MESSAGES` | `12` | 2–50 |
 | `MEMORY_PERSIST` | `true` | Booleano |
 | `EYES_ADDRESS` | vacío | `serial://...` o vacío (ojos apagados) |
@@ -329,8 +330,12 @@ Las claves se muestran siempre enmascaradas.
 | `TTS_MODEL` | `models/voices/es_MX-claude-high.onnx` | `.onnx` y `.onnx.json` existentes |
 | `AUDIO_INPUT_DEVICE` | vacío | Nombre ALSA o vacío (defecto del sistema) |
 | `AUDIO_OUTPUT_DEVICE` | vacío | Nombre ALSA o vacío |
+| `AUDIO_PLAYER_COMMAND` | `aplay` | `aplay`, `paplay` o `pw-play` (o un comando personalizado) |
 | `VAD_MIN_START_RMS` | `1200` | 0–20000; alias antiguo: `VAD_MIN_RMS` |
 | `VAD_MIN_END_RMS` | `600` | 0–20000, menor que `VAD_MIN_START_RMS` |
+| `VAD_START_MULTIPLE` | `1.6` | Mayor que 1; multiplica el suelo para empezar |
+| `VAD_END_MULTIPLE` | `1.2` | Mayor que 1; multiplica el suelo para terminar |
+| `VAD_NOISE_CALIBRATION_MS` | `500` | 100–3000 |
 | `VAD_PREBUFFER_MS` | `300` | 100–1000 |
 | `VAD_START_FRAMES` | `3` | 1–10 (frames de 20 ms) |
 | `VAD_SILENCE_MS` | `400` | 200–1500 |
