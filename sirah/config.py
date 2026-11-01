@@ -151,7 +151,16 @@ def load_persona_settings(
                 and isinstance(override, str)
                 and override.strip().lower() in _IDENTITIES
             ):
+                # Si la clave apunta a una tarjeta real, usar su ruta absoluta:
+                # así identidades de tarjetas en directorios distintos no colisionan.
                 normalized_key = key.strip()
+                candidate = Path(normalized_key).expanduser()
+                if not candidate.is_absolute():
+                    project_candidate = (PROJECT_ROOT / normalized_key).expanduser()
+                    if project_candidate.exists():
+                        candidate = project_candidate
+                if candidate.exists():
+                    normalized_key = str(candidate.resolve())
                 cards[normalized_key] = _canonical_identity(override)
                 # Mantener compatibilidad con tarjetas por nombre y por ruta.
                 cards[Path(normalized_key).name] = _canonical_identity(override)
