@@ -168,10 +168,14 @@ def main(argv: list[str] | None = None) -> int:
         )
     except KeyboardInterrupt:
         print("\nHasta luego.", flush=True)
-        # El hilo daemon que lee stdin sigue bloqueado; salir normal se cuelga
-        # al finalizar el intérprete. Cerramos logs y salimos directo.
+        # En modo texto hay un hilo daemon bloqueado en input(); salir normal
+        # se cuelga al finalizar el intérprete. En voz no hay ese hilo y conviene
+        # dejar que asyncio limpie micrófono y reproductor.
+        if args.command != "voice":
+            logging.shutdown()
+            os._exit(130)
         logging.shutdown()
-        os._exit(130)
+        return 130
     except Exception:
         logger.exception("Fallo inesperado en el chat")
         print("[FALLA] SIRAH se detuvo por un error inesperado. Revisa el log.")
