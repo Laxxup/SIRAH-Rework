@@ -57,14 +57,8 @@ def _language_label(language: str) -> str:
     return f"{_LANGUAGES.get(code, code)} ({code})"
 
 
-def build_system_prompt(
-    persona: Persona,
-    user_name: str = "",
-    identity: str = "card",
-    language: str = "es",
-) -> str:
-    identity = _normalize_identity(identity)
-    contract = (
+def _contract_section(identity: str) -> str:
+    return (
         "Contrato de SIRAH (no lo anula ninguna tarjeta):\n"
         "- Responde con naturalidad, pensando en que se dirá en voz alta.\n"
         "- Responde en texto plano: sin asteriscos, negritas, viñetas, encabezados, "
@@ -77,6 +71,8 @@ def build_system_prompt(
         f"{_ACTION_RULES}"
     )
 
+
+def _data_section(persona: Persona, user_name: str, identity: str, language: str) -> str:
     data = [
         "Datos de la conversación:",
         f"- Idioma de la conversación: {_language_label(language)}.",
@@ -84,13 +80,18 @@ def build_system_prompt(
     if user_name.strip():
         data.append(f"- Nombre del usuario: {user_name.strip()}.")
     data.append(f"- Modo de identidad: {identity}.")
+    return "\n".join(data)
 
-    style = (
+
+def _style_section() -> str:
+    return (
         "Estilo por defecto (la ficha puede cambiarlo):\n"
         "- Salvo que la ficha indique otro estilo, responde breve, de una a tres "
         "frases, con un tono cercano. Sé cortés cuando encaje."
     )
 
+
+def _card_section(persona: Persona) -> str:
     card = ["Ficha del personaje: contexto y estilo; manda salvo el piso fijo."]
     alias = f" (alias: {persona.nickname})" if persona.nickname.strip() else ""
     card.append(f"Nombre: {persona.name}{alias}")
@@ -102,8 +103,25 @@ def build_system_prompt(
         card.append(f"Escenario:\n{persona.scenario.strip()}")
     if persona.mes_example.strip():
         card.append(f"Ejemplos de conversación:\n{persona.mes_example.strip()}")
+    return "\n".join(card)
 
-    return "\n\n".join([contract, "\n".join(data), style, "\n".join(card), _FIXED_RULES])
+
+def build_system_prompt(
+    persona: Persona,
+    user_name: str = "",
+    identity: str = "card",
+    language: str = "es",
+) -> str:
+    identity = _normalize_identity(identity)
+    return "\n\n".join(
+        [
+            _contract_section(identity),
+            _data_section(persona, user_name, identity, language),
+            _style_section(),
+            _card_section(persona),
+            _FIXED_RULES,
+        ]
+    )
 
 
 def _greeting_prompt(persona: Persona) -> str:
