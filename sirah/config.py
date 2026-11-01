@@ -179,9 +179,7 @@ def identity_for(settings: PersonaSettings, card_path: Path) -> str:
     if override is None:
         # Una entrada por el nombre simple es una intención inequívoca aunque
         # exista otra entrada del mismo basename en otra ruta.
-        basename_only = [
-            value for key, value in settings.cards.items() if key == card_path.name
-        ]
+        basename_only = [value for key, value in settings.cards.items() if key == card_path.name]
         by_name = [
             value for key, value in settings.cards.items() if Path(key).name == card_path.name
         ]
