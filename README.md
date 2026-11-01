@@ -13,7 +13,6 @@ usar voz si el audio está disponible.
 > **Estado:** hitos 0, 1 y 4 implementados. Texto y voz funcionan; se validó una
 > conversación por voz en esta máquina. Hito 2 es el siguiente. Ojos y visión
 > aún no existen físicamente. Este README se actualiza en cada hito.
-
 ## Requisitos
 
 - Python 3.12 (`uv` lo instala si hace falta) y [`uv`](https://docs.astral.sh/uv/).
