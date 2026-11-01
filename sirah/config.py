@@ -143,16 +143,19 @@ def load_persona_settings(
     if raw_cards is not None and not isinstance(raw_cards, dict):
         warnings.append(f"{path}: 'cards' debe ser una tabla; se ignora.")
     elif isinstance(raw_cards, dict):
-        for filename, card in raw_cards.items():
+        for key, card in raw_cards.items():
             override = card.get("identity") if isinstance(card, dict) else None
             if (
-                isinstance(filename, str)
+                isinstance(key, str)
                 and isinstance(override, str)
                 and override.strip().lower() in _IDENTITIES
             ):
-                cards[filename] = _canonical_identity(override)
+                normalized_key = key.strip()
+                cards[normalized_key] = _canonical_identity(override)
+                # Mantener compatibilidad con tarjetas por nombre y por ruta.
+                cards[Path(normalized_key).name] = _canonical_identity(override)
             else:
-                warnings.append(f"{path}: override de '{filename}' inválido; se ignora.")
+                warnings.append(f"{path}: override de '{key}' inválido; se ignora.")
 
     return PersonaSettings(
         path=path,
@@ -167,7 +170,11 @@ def load_persona_settings(
 
 def identity_for(settings: PersonaSettings, card_path: Path) -> str:
     """El modo de identidad sale solo de `sirah.toml`, nunca de la tarjeta."""
-    override = settings.cards.get(card_path.name)
+    override = settings.cards.get(str(card_path))
+    if override is None:
+        override = settings.cards.get(str(card_path.resolve()))
+    if override is None:
+        override = settings.cards.get(card_path.name)
     return override if override in _IDENTITIES else settings.identity
 
 
