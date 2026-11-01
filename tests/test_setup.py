@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import stat
-import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -204,37 +203,3 @@ def test_download_voice_rejects_a_file_with_the_wrong_hash(tmp_path: Path, monke
 
     assert not (tmp_path / "es.onnx").exists()
     assert not (tmp_path / ".es.onnx.part").exists()
-
-
-def test_opencode_setup_script_generates_agents(tmp_path: Path) -> None:
-    """El setup shell canonico debe reemplazar todas las plantillas sin residuos."""
-    root = Path(__file__).resolve().parents[1]
-    script = root / "opencode-setup" / "setup.sh"
-
-    first = subprocess.run(
-        ["bash", str(script), "prov/id&b", "prov/idbackslash"],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-    )
-    assert first.returncode == 0, first.stderr
-    agents_dir = tmp_path / ".opencode" / "agents"
-    assert agents_dir.is_dir()
-    templates = sorted(agents_dir.glob("*.md"))
-    assert len(templates) == 4
-    for template in templates:
-        text = template.read_text(encoding="utf-8")
-        assert "__" not in text
-    orchestrator = (
-        tmp_path / ".opencode" / "agents" / "orchestrator.md"
-    ).read_text(encoding="utf-8")
-    assert orchestrator.startswith("---\n")
-
-    second = subprocess.run(
-        ["bash", str(script), "any/model", "other/model"],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-    )
-    # Reejecutar remplace agentes en el mismo directorio sin fallar.
-    assert second.returncode == 0, second.stderr

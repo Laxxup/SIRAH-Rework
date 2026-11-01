@@ -32,8 +32,7 @@ uv run pytest tests/test_agent.py::test_name -q
 
 No hay `.venv` versionado: ejecuta `uv sync` antes de tests o CLI. Si `uv` no
 está en PATH, instálalo en `~/.local/bin`. `make check` debe pasar sin red, sin
-hardware y sin `BENCH_PORT`. `opencode-setup/` genera agentes OpenCode; no es la
-instalación real de SIRAH (`uv sync` + `uv run sirah setup`).
+hardware y sin `BENCH_PORT`. 
 
 ## Arquitectura rápida
 
