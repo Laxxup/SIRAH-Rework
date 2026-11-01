@@ -111,11 +111,11 @@ async def run_terminal(
             continue
 
         write(f"{persona.display_name}> ")
-        collected = ""
+        collected_parts: list[str] = []
         pending = ""
         try:
             async for chunk in agent.respond(text, on_actions=_log_actions):
-                collected += chunk
+                collected_parts.append(chunk)
                 pending += chunk
                 visible = pending.rstrip()
                 if visible:
@@ -136,6 +136,7 @@ async def run_terminal(
 
         # El LLM real lo construye build_agent: el parámetro `llm` suele ser None.
         truncated = getattr(agent.llm, "last_finish_reason", None) == "length"
+        collected = "".join(collected_parts)
         if not collected:
             if truncated:
                 write(f"\n{_token_warning(config.llm_max_tokens)}")
