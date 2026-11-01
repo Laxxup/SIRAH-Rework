@@ -41,18 +41,30 @@ _DEFAULT_PERSONA_PATH = Path(__file__).resolve().parents[2] / "config" / "person
 
 
 def migrate_default_history(data_dir: Path) -> Path | None:
-    """Renombra el historial de la tarjeta antigua, dejando una copia de respaldo."""
+    """Renombra el historial de la tarjeta antigua, dejando una copia de respaldo.
+
+    La migración se serializa con un lock para que dos procesos no migren el
+    mismo archivo a la vez y no se sobrescriban las copias de respaldo.
+    """
     history_dir = data_dir / "history"
     source = history_dir / "default.jsonl"
     target = history_path(data_dir, _DEFAULT_PERSONA_PATH)
-    if not source.exists() or target.exists():
+    if not history_dir.exists():
         return None
-    backup = history_dir / f"{target.name}.bak"
+    lock_path = history_dir / f".{target.name}.lock"
     try:
-        shutil.copy2(source, backup)
-        os.chmod(backup, 0o600)
-        os.replace(source, target)
-        os.chmod(target, 0o600)
+        with open(lock_path, "a+", encoding="utf-8") as lock_handle:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+            try:
+                if not source.exists() or target.exists():
+                    return None
+                backup = history_dir / f"{target.name}.bak"
+                shutil.copy2(source, backup)
+                os.chmod(backup, 0o600)
+                os.replace(source, target)
+                os.chmod(target, 0o600)
+            finally:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
     except OSError as exc:
         logger.warning("No se pudo migrar el historial %s: %s", source, exc.strerror)
         return None
