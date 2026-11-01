@@ -1,29 +1,89 @@
 # SIRAH
 
-SIRAH es un robot conversacional por texto y voz. El chat por texto solo
-necesita una clave LLM; la voz requiere audio real y Piper. Los ojos, la
-visión y los servos llegan en los hitos 2 y 3; por ahora las etiquetas
-`{{look}}`, `{{blink}}`, `{{tired}}` y `{{center}}` se analizan y se
-descartan.
+S.I.R.A.H. es un robot conversacional por texto y voz, para sistemas
+embebidos Linux, sin contenedores ni GPU.
 
-Está pensado para Linux (x86_64 o Raspberry Pi aarch64), sin contenedores ni
-GPU. Sin configurar `EYES_ADDRESS`, SIRAH sigue funcionando por texto y puede
-usar voz si el audio está disponible.
+**Estado actual:** la parte de texto está implementada; la voz fue validada
+manualmente en una máquina; los ojos/servos y la visión siguen pendientes de
+validación física.
 
-> **Estado:** hitos 0, 1 y 4 implementados. Texto y voz funcionan; se validó una
-> conversación por voz en esta máquina. Hito 2 es el siguiente. Ojos y visión
-> aún no existen físicamente. Este README se actualiza en cada hito.
-## Requisitos
+**Validación actual:** `make check` pasa en desarrollo local (sin hardware ni
+red); `make guard` protege rutas sensibles. CI: TODO.
 
-- Python 3.12 (`uv` lo instala si hace falta) y [`uv`](https://docs.astral.sh/uv/).
-- Una sola clave LLM. Si ya usas Groq, se reutiliza `LLM_API_KEY`; si no,
-  añade `GROQ_API_KEY` para la voz.
-- Para voz: `alsa-utils` (`arecord`, `aplay`), Piper y su modelo.
-- Para ojos: ESP32, firmware en `firmware/`, grupo `dialout` y ruta
-  `/dev/serial/by-id/...`.
-- Para visión: cámara V4L2 y grupo `video` (pendiente de implementación).
+## Qué es SIRAH
 
-## Inicio rápido
+Combina un LLM, tarjetas de personaje, memoria e historial local, texto y voz.
+Las etiquetas de ojos se analizan y se descartan hoy, porque esa parte no está
+validada. SIRAH no afirma acciones físicas que no ocurrieron.
+
+## Estado del proyecto
+
+| Hito | Estado | Detalle |
+|---|---|---|
+| Hito 0 | Implementado | `setup` y `doctor` |
+| Hito 1 | Implementado | Texto, tarjetas y memoria |
+| Hito 2 | HIL pendiente | ESP32, PCA9685 y servos |
+| Hito 3 | Pendiente | Cámara y detección |
+| Hito 4 | Parcial | Captura, STT, TTS y VAD |
+
+## Tabla de contenido
+
+- [Demo y media](#demo-y-media)
+- [Arquitectura](#arquitectura)
+- [Hardware](#hardware)
+- [Software y requisitos](#software-y-requisitos)
+- [Instalación y uso](#instalacion-y-uso)
+- [Estructura de repositorio](#estructura-de-repositorio)
+- [Validación](#validacion)
+- [Roadmap](#roadmap)
+- [Créditos y equipo](#creditos-y-equipo)
+- [Licencias](#licencias)
+- [Contacto](#contacto)
+
+## Demo y media
+
+TODO: screenshots, GIFs y fotos del montaje todavía no están disponibles.
+No incluir activamente imágenes hasta tener una fuente propia y revisada.
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+  user[Entrada texto o voz] --> agent[Agente]
+  agent --> prompt[Prompt]
+  prompt --> llm[LLM]
+  llm --> text[Texto limpio]
+  llm --> actions[Acciones ojos (hoy se descartan)]
+  agent --> memory[Memoria e historial]
+```
+
+Lee `docs/ARQUITECTURA.md` para los flujos por texto y voz, y
+`docs/PROTOCOL.md` para el protocolo del firmware.
+
+## Hardware
+
+| Componente | Cantidad | Estado |
+|---|---:|---|
+| ESP32, modelo exacto por confirmar | 1 | Firmware listo; hardware sin HIL completo |
+| PCA9685, dirección `0x40` | 1 | Extremos calibrados; integración pendiente |
+| Servo SG90 | 6 | Calibración candidata; `TIRED` pendiente |
+| Fuente externa 5 V | 1 | TODO: amperaje real medido |
+| Cámara USB / V4L2 | 1 (opt-in) | Software listo; visión pendiente |
+| Micrófono y altavoz | 1 de cada (opt-in) | Voz validada en una máquina |
+
+Mecánica de ojos: EggMech ε3.2 es una inspiración; SIRAH no incluye archivos
+STL. Las licencias de esos diseños: TODO por confirmar.
+
+## Software y requisitos
+
+- Python 3.12, `uv`, Linux x86_64 o aarch64.
+- `httpx` y `pyserial`.
+- Voz opcional: `piper-tts`, ALSA.
+- Una clave LLM; para STT se reutiliza Groq si el LLM ya es Groq.
+- Hardware opcional con grupo `dialout`, cámara y audio.
+- Sin contenedores ni GPU.
+
+## Instalación y uso
 
 ```bash
 uv sync --all-extras
@@ -33,70 +93,61 @@ uv run sirah
 ```
 
 ```bash
-uv run sirah voice       # conversación manos libres, opt-in
-uv run sirah voice --check   # graba al menos 3 s y muestra RMS y VAD
-uv run sirah --persona config/persona/otra.json
+uv run sirah voice
+uv run sirah voice --check
 uv run sirah doctor --offline
 ```
 
-`sirah setup` crea `.env` con permisos restringidos, copia
-`config/sirah.toml.example` a `config/sirah.toml`, detecta ESP32, cámara y
-audio, y ofrece descargar la voz. La única configuración obligatoria para
-conversar es `LLM_API_KEY`.
+`sirah setup` crea `.env`, copia `config/sirah.toml.example` y ofrece voz.
+`sirah doctor` no abre el serial.
 
-`sirah doctor` no abre el serial: abrirlo reinicia el ESP32 y mueve servos.
-La prueba real requiere confirmación.
+## Estructura de repositorio
 
-## Configuración y datos
+```text
+SIRAH/
+├── sirah/          # núcleo y adaptadores
+├── config/         # calibración y tarjetas
+├── firmware/       # ESP32 y PCA9685
+├── docs/           # arquitectura, protocolo, hardware
+├── tests/          # sin hardware ni red
+├── assets/         # TODO assets propios
+└── .env.example
+```
 
-Tarjeta activa, idioma e identidad se eligen en `config/sirah.toml`
-(`card` por defecto, `personaje` de alias, `robot` como modo estricto).
-`--persona` tiene prioridad. Una tarjeta rota no impide arrancar.
+## Validación
 
-SIRAH conserva por defecto los últimos 12 mensajes por tarjeta
-(`MEMORY_MESSAGES`, `MEMORY_PERSIST=true`); el saludo de arranque se guarda como primer turno `assistant`.
-`USER_NAME` entra como dato y es global para todas las tarjetas. El idioma y la
-identidad de `config/sirah.toml` también son globales y sobreviven al cambiar de
-tarjeta. Los logs usan `$XDG_DATA_HOME/sirah/logs/sirah.log`,
-con `--debug` y rotación de 3 archivos de 1 MB. Las etiquetas `{{look}}`,
-`{{blink}}`, `{{tired}}` y `{{center}}` se quitan del texto siempre.
+- `make check`: pruebas offline, sin hardware ni red.
+- `make guard`: rutas protegidas intactas.
+- `voice --check`: graba 3 s y muestra RMS/VAD.
+- HIL: fotos, medición, reconexión y resistencia TODO.
+- Voz: pendientes VAD con ruido, corte de red y cierre limpio.
 
-## Voz
+## Roadmap
 
-- Privacidad: el audio se envía a Groq y no se guarda; el historial queda en
-  texto.
-- Half-duplex: micrófono parado mientras habla; no hay interrupción por voz.
-- Turnos sin pausa: se recorta tras `VAD_MAX_TURN_MS` (10 s por defecto).
-- Configura `VAD_MIN_START_RMS` y `VAD_MIN_END_RMS` con `voice --check`; deja
-  el de fin por debajo del de inicio.
-- Ctrl-C detiene `arecord`, Piper y el reproductor. `aplay` puede colgarse
-  con PipeWire: se autoselecciona `paplay` o `pw-play`, o fórzalo con
-  `AUDIO_PLAYER_COMMAND`.
+- Validar servos con carga real.
+- Probar `TIRED`, alimentación y reconexión.
+- Implementar visión con cámara.
+- Medir rendimiento en Raspberry Pi.
+- Agregar panel web autenticado en un hito posterior.
+- Mejorar pruebas HIL.
 
-## Limitaciones conocidas
+## Créditos y equipo
 
-- Ojos, visión y servos aún no están implementados; las etiquetas se descartan.
-- La voz está implementada y se validó una conversación completa en esta
-  máquina. Siguen pendientes el VAD con ruido, el corte de internet y el
-  cierre limpio.
-- El firmware no implementa `NOD` ni persiste `MODE`.
-- La pose `TIRED`, la alimentación sostenida y el rendimiento en Raspberry Pi no
-  están validados.
-- Sin `BENCH_PORT`, las pruebas de hardware se saltan y no se abre otro puerto.
-- Las tarjetas locales no se versionan; `doctor` muestra la identidad.
-
-## Documentación
-
-- [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md): estructura y decisiones.
-- [`docs/HARDWARE.md`](docs/HARDWARE.md): cableado, canales, calibración.
-- [`docs/PROTOCOL.md`](docs/PROTOCOL.md): protocolo serial del ESP32.
-- [`docs/PENDIENTES.md`](docs/PENDIENTES.md): lo que falta validar.
-- [`docs/DECISIONES.md`](docs/DECISIONES.md): decisiones y estado.
-- [`config/persona/README.md`](config/persona/README.md): Character Card v2/v3.
+- Institución: Tecnológico Nacional de México / TEC de Madero
+  *(TODO: confirmar nombre exacto)*.
+- Supervisor del proyecto: TODO.
+- Integrantes: TODO.
+- Taller: Comunidad Robótica *(TODO: responsables)*.
+- Contacto: correo TODO; Facebook, enlace secundario TODO.
 
 ## Licencias
 
-- **Ojos ε-Series:** CC BY-NC-SA 4.0. Atribución obligatoria; no comercial sin
-  permiso.
-- **Piper TTS:** GPL-3.0-or-later, como proceso separado.
-- **YuNet:** MIT. **Código nuevo:** MIT (`LICENSE`).
+- Código nuevo: MIT (`LICENSE`).
+- Firmware y calibración: revisa `firmware/README.md`.
+- Piper y modelos: licencias propias.
+- YuNet: MIT (`models/LICENSE.yunet`).
+- EyeMech: solo referencia, no incluye archivos STL.
+
+## Contacto
+
+TODO: correo directo y enlace del repositorio.
