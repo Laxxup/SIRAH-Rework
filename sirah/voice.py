@@ -75,6 +75,9 @@ class VoiceLoop:
                     raise
                 self.write(f"[FALLA] {exc}\n")
                 await asyncio.sleep(min(2 ** (failures - 1), 30))
+            except Exception as exc:
+                logger.exception("Fallo inesperado durante un turno de voz")
+                raise
 
     async def calibrate(self) -> None:
         """Deja el suelo de ruido calibrado antes de que el robot hable."""
@@ -290,11 +293,15 @@ async def run_voice(
     write: Callable[[str], None] = _stdout,
 ) -> int:
     problems = _prerequisites(config)
+
+    async def _text_fallback() -> int:
+        write("[AVISO] La voz no está disponible; sigo por texto.\n\n")
+        return await run_terminal(config, persona, identity=identity, language=language)
+
     if problems:
         for problem, fix in problems:
             write(f"[FALLA] Voz: {problem}\n        Solución: {fix}\n")
-        write("[AVISO] La voz no está disponible; sigo por texto.\n\n")
-        return await run_terminal(config, persona, identity=identity, language=language)
+        return await _text_fallback()
 
     choice = resolve_player(config)
     if choice.command is None:
@@ -303,8 +310,7 @@ async def run_voice(
             "        Solución: fija AUDIO_PLAYER_COMMAND (por ejemplo paplay) "
             "o revisa `sirah doctor`.\n"
         )
-        write("[AVISO] La voz no está disponible; sigo por texto.\n\n")
-        return await run_terminal(config, persona, identity=identity, language=language)
+        return await _text_fallback()
     if choice.message:
         write(f"[AVISO] {choice.message}\n")
 
