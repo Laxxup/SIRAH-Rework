@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import json
 import logging
 import os
@@ -77,25 +79,36 @@ class HistoryFile:
             "role": role,
             "text": text,
         }
+        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(self.path.parent, 0o700)
+        lock_path = self.path.with_name(f".{self.path.name}.lock")
         try:
-            self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            os.chmod(self.path.parent, 0o700)
-            descriptor = os.open(
-                self.path,
-                os.O_APPEND | os.O_CREAT | os.O_WRONLY,
-                0o600,
-            )
-            with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-            os.chmod(self.path, 0o600)
-            self._compact_if_needed()
+            with open(lock_path, "a+", encoding="utf-8") as lock_handle:
+                with contextlib.suppress(OSError):
+                    os.chmod(lock_path, 0o600)
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    descriptor = os.open(
+                        self.path,
+                        os.O_APPEND | os.O_CREAT | os.O_WRONLY,
+                        0o600,
+                    )
+                    with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
+                        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                    os.chmod(self.path, 0o600)
+                    self._compact_if_needed()
+                finally:
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
         except OSError as exc:
             logger.warning("No se pudo guardar el historial %s: %s", self.path, exc.strerror)
 
     def _compact_if_needed(self) -> None:
-        size = self.path.stat().st_size
-        with self.path.open(encoding="utf-8") as handle:
-            lines = [line.rstrip("\n") for line in handle]
+        try:
+            size = self.path.stat().st_size
+            with self.path.open(encoding="utf-8") as handle:
+                lines = [line.rstrip("\n") for line in handle]
+        except OSError:
+            return
         if len(lines) <= MAX_LINES and size <= MAX_BYTES:
             return
         keep = _COMPACT_LINES if size > MAX_BYTES else _KEEP_LINES
@@ -103,10 +116,15 @@ class HistoryFile:
 
     def _write_atomic(self, lines: list[str]) -> None:
         temporary = self.path.with_name(f".{self.path.name}.tmp")
-        descriptor = os.open(temporary, os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0o600)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write("\n".join(lines) + "\n")
-        os.replace(temporary, self.path)
+        try:
+            descriptor = os.open(temporary, os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0o600)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.write("\n".join(lines) + "\n")
+            os.replace(temporary, self.path)
+        except OSError:
+            with contextlib.suppress(FileNotFoundError):
+                temporary.unlink()
+            raise
 
     @staticmethod
     def _parse(line: str) -> Message | None:
