@@ -7,8 +7,9 @@ embebidos Linux, sin contenedores ni GPU.
 manualmente en una máquina; los ojos/servos y la visión siguen pendientes de
 validación física.
 
-**Validación actual:** `make check` pasa en desarrollo local (sin hardware ni
-red); `make guard` protege rutas sensibles. CI: TODO.
+**Validación actual:** `make check` pasa en desarrollo local, sin hardware ni
+red; `make guard` protege rutas sensibles. Ejecuta `make check` para la cifra
+de pruebas actual. CI: TODO.
 
 ## Qué es SIRAH
 
@@ -70,7 +71,7 @@ Lee `docs/ARQUITECTURA.md` para los flujos por texto y voz, y
 | Cámara USB / V4L2 | 1 (opt-in) | Software listo; visión pendiente |
 | Micrófono y altavoz | 1 de cada (opt-in) | Voz validada en una máquina |
 
-Mecánica de ojos: EggMech ε3.2 es una inspiración; SIRAH no incluye archivos
+Mecánica de ojos: EyeMech ε3.2 es una inspiración; SIRAH no incluye archivos
 STL. Las licencias de esos diseños: TODO por confirmar.
 
 ## Software y requisitos
@@ -109,7 +110,6 @@ SIRAH/
 ├── firmware/       # ESP32 y PCA9685
 ├── docs/           # arquitectura, protocolo, hardware
 ├── tests/          # sin hardware ni red
-├── assets/         # TODO assets propios
 └── .env.example
 ```
 
