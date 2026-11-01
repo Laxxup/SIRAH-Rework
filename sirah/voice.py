@@ -353,10 +353,12 @@ async def run_voice(
         await loop.calibrate()
     except VoiceError as exc:
         write(f"[AVISO] {exc}\n")
-    greeting = await opening_greeting(persona)
+    memory = getattr(agent, "memory", None)
+    greeting = await opening_greeting(persona) if not getattr(memory, "messages", ()) else ""
     record_opening_greeting(agent, history, greeting)
     try:
-        await loop.speak_greeting(greeting)
+        if greeting:
+            await loop.speak_greeting(greeting)
         write("Micrófono activo. Ctrl-C para salir\n")
         write("El audio se envía a Groq para transcribirse; no se guarda en disco.\n\n")
         try:

@@ -86,8 +86,12 @@ async def run_terminal(
         write("Aviso: la visión se activa en el hito 3; ahora solo hay texto.\n")
     write("\n")
 
-    greeting = await opening_greeting(persona)
-    write(f"{greeting}\n\n")
+    memory = getattr(agent, "memory", None)
+    if getattr(memory, "messages", ()):
+        greeting = ""
+    else:
+        greeting = await opening_greeting(persona)
+        write(f"{greeting}\n\n")
     record_opening_greeting(agent, history, greeting)
 
     while True:
