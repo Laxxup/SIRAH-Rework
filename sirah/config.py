@@ -414,6 +414,13 @@ def load_config(
     parsed_url = urlparse(base_url)
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
         raise ConfigError("LLM_BASE_URL", base_url, "debe ser una URL http(s) válida")
+    # Evita enviar la clave por HTTP a hosts remotos.
+    if parsed_url.scheme == "http" and (parsed_url.hostname or "") not in _LOOPBACK:
+        raise ConfigError(
+            "LLM_BASE_URL",
+            base_url,
+            "HTTP solo se admite en loopback (127.0.0.1, localhost, ::1); usa HTTPS",
+        )
 
     model = _text(values, "LLM_MODEL", "openai/gpt-oss-20b")
     if not model:
