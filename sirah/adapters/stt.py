@@ -37,7 +37,7 @@ class GroqSTT:
         for attempt in range(_ATTEMPTS):
             try:
                 async with httpx.AsyncClient(
-                    timeout=self.timeout_s, transport=self.transport
+                    timeout=self.timeout_s, transport=self.transport, trust_env=False
                 ) as client:
                     response = await client.post(
                         self.url,

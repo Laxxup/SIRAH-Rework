@@ -118,7 +118,7 @@ class LLMClient:
 
         try:
             async with (
-                httpx.AsyncClient(timeout=timeout) as client,
+                httpx.AsyncClient(timeout=timeout, trust_env=False) as client,
                 client.stream(
                     "POST",
                     f"{self.base_url}/chat/completions",
