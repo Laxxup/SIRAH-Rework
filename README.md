@@ -53,7 +53,7 @@ flowchart LR
   agent --> prompt[Prompt]
   prompt --> llm[LLM]
   llm --> text[Texto limpio]
-  llm --> actions[Acciones ojos (hoy se descartan)]
+  llm --> actions["Acciones ojos (hoy se descartan)"]
   agent --> memory[Memoria e historial]
 ```
 
