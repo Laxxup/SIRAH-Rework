@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-import sys
 import threading
 from collections.abc import Awaitable, Callable
 
@@ -13,14 +12,9 @@ from sirah.adapters.llm import LLMClient, LLMError
 from sirah.config import Config
 from sirah.core.actions import Action
 from sirah.core.persona import Persona
-from sirah.session import build_agent, opening_greeting
+from sirah.session import _stdout, _token_warning, build_agent, opening_greeting
 
 logger = logging.getLogger("sirah.terminal")
-
-
-def _stdout(text: str) -> None:
-    sys.stdout.write(text)
-    sys.stdout.flush()
 
 
 async def _read_line(prompt: str) -> str:
@@ -53,14 +47,6 @@ async def _read_line(prompt: str) -> str:
 
 def _log_actions(actions: tuple[Action, ...]) -> None:
     logger.debug("Acciones ignoradas (ojos en el hito 2): %s", actions)
-
-
-def _token_warning(max_tokens: int) -> str:
-    return (
-        "[AVISO] La respuesta se cortó por el límite de tokens "
-        f"(LLM_MAX_TOKENS={max_tokens}). "
-        'Puedes pedir "continúa" o subir el valor en .env.\n'
-    )
 
 
 async def run_terminal(

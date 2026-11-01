@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 
 from sirah.adapters.history_file import HistoryFile, history_path, migrate_default_history
 from sirah.adapters.llm import LLMClient
@@ -65,3 +66,16 @@ async def opening_greeting(agent: Agent, persona: Persona, config: Config) -> st
         logger.debug("No se pudo generar el saludo; se usa el de respaldo", exc_info=True)
         greeting = ""
     return greeting or f"Hola, soy {persona.display_name}. ¿De qué quieres hablar?"
+
+
+def _stdout(text: str) -> None:
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+def _token_warning(max_tokens: int) -> str:
+    return (
+        "[AVISO] La respuesta se cortó por el límite de tokens "
+        f"(LLM_MAX_TOKENS={max_tokens}). "
+        'Puedes pedir "continúa" o subir el valor en .env.\n'
+    )

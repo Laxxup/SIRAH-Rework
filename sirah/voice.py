@@ -27,7 +27,8 @@ from sirah.core.voice import (
 )
 from sirah.doctor import alsa_cards, find_piper, resolve_player
 from sirah.session import build_agent, opening_greeting
-from sirah.terminal import _stdout, _token_warning, run_terminal
+from sirah.session import _stdout, _token_warning
+from sirah.terminal import run_terminal
 
 logger = logging.getLogger("sirah.voice")
 
