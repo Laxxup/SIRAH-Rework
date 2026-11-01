@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Un turno necesita al menos esta duración de voz real para no ser un chasquido.
 _MIN_VOICE_MS = 300
+# Mínimo de frames para calibrar el suelo aunque se pida menos.
+_MIN_CALIBRATION_FRAMES = 5
 # Tras reabrir el micrófono se descartan 200 ms de cola del altavoz.
 _WARMUP_FRAMES = 10
 # Solo se sigue el suelo tras este silencio estable.
@@ -97,7 +99,9 @@ class AdaptiveSpeechDetector:
         self.end_multiple = end_multiple
         self.min_start_rms = min_start_rms
         self.min_end_rms = min_end_rms
-        self._calibration_frames = max(1, noise_calibration_ms // FRAME_MS)
+        requested = max(1, noise_calibration_ms // FRAME_MS)
+        self._too_few_requested = requested < _MIN_CALIBRATION_FRAMES
+        self._calibration_frames = max(_MIN_CALIBRATION_FRAMES, requested)
         self._samples: list[float] = []
         self._warmup = _WARMUP_FRAMES
         self._quiet_run = 0
@@ -134,7 +138,14 @@ class AdaptiveSpeechDetector:
         ranked = sorted(self._samples)
         self._samples = []
         self._pending_calibration = False
+        if not ranked:
+            self.noise_floor = 0.0
+            if self.pending_warning is None:
+                self.pending_warning = "Calibración del VAD con frames insuficientes."
+            return
         self.noise_floor = ranked[int(0.9 * (len(ranked) - 1))]
+        if self._too_few_requested and self.pending_warning is None:
+            self.pending_warning = "Calibración del VAD con frames insuficientes; se usó el mínimo."
         if self.noise_floor > 2000 and self.pending_warning is None:
             self.pending_warning = (
                 "El ruido de fondo del micrófono es alto. Baja la ganancia con "
