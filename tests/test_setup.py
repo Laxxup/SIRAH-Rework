@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import stat
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -203,3 +204,35 @@ def test_download_voice_rejects_a_file_with_the_wrong_hash(tmp_path: Path, monke
 
     assert not (tmp_path / "es.onnx").exists()
     assert not (tmp_path / ".es.onnx.part").exists()
+
+
+def test_opencode_setup_script_substitutes_and_reruns_cleanly(tmp_path: Path) -> None:
+    """Guard de regresión para el assistant OpenCode: caracteres especiales y rerun."""
+    root = Path(__file__).resolve().parents[1]
+    script = root / "opencode-setup" / "setup.sh"
+    package = tmp_path / ".opencode"
+    package.mkdir()
+    template = tmp_path / package / "agent.md"
+    template.write_text(
+        "orch=__ORCH_MODEL__\nsub=__SUB_MODEL__\n",
+        encoding="utf-8",
+    )
+
+    first = subprocess.run(
+        ["bash", str(script), "prov/id&b", r"prov\id"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+    assert first.returncode == 0
+    assert "actualizado" in first.stdout
+    assert template.read_text(encoding="utf-8") == "orch=prov/id&b\nsub=prov\\id\n"
+
+    second = subprocess.run(
+        ["bash", str(script), "any/model", "other/model"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+    assert second.returncode == 0
+    assert "No agent template markers" not in second.stdout + second.stderr
