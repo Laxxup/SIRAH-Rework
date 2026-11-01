@@ -103,9 +103,9 @@ crean cuando toque, no antes.
 | Ojos (hito 2) | `adapters/serial_eyes.py` | Dueño único del puerto, handshake, heartbeat, cola y reconexión | Capa apagada con aviso; SIRAH sigue por texto |
 | Visión (hito 3) | `adapters/camera.py` | Captura V4L2, YuNet, suavizado y `TARGET` | Se apaga con aviso; los ojos quedan a la última orden |
 | STT | `adapters/stt.py` | Groq Whisper en español | El modo voz se apaga; el texto sigue |
-| TTS | `adapters/tts.py` | Piper + `aplay`, por frases | Responde por texto y avisa una vez |
-| Audio | `adapters/mic.py` + `adapters/tts.py` | `arecord` / `aplay` como subprocesos | Sin voz; el resto sigue |
-| VAD | `core/voice.py` | WebRTC VAD + RMS mínimo, turno mínimo de 300 ms | Sin manos libres; el texto sigue |
+| TTS | `adapters/tts.py` | Piper + reproductor de audio, por frases | Responde por texto y avisa una vez |
+| Audio | `adapters/mic.py` + `adapters/tts.py` | `arecord` y un reproductor (`aplay`, `paplay` o `pw-play`) como subprocesos | Sin voz; el resto sigue |
+| VAD | `core/voice.py` | VAD adaptativo por RMS, turno mínimo de 300 ms | Sin manos libres; el texto sigue |
 | Persona | `core/persona.py` | Carga tarjetas v2/v3, limpia en memoria y avisa | Si la tarjeta falla, avisa y arranca con `sirah.json` |
 | Memoria | `core/memory.py` + `adapters/history_file.py` | Historial acotado y JSONL | Aviso; la sesión sigue sin persistencia |
 | Supervisor | `core/voice.py` (`Supervisor`) | Estados y aviso a los ojos (hoy `NullEyes`) | — |
@@ -174,18 +174,20 @@ cámara ─> YuNet ─> suavizado ───────> core/agent.py ──> a
 
 ### 4.2 Un turno por voz
 
-1. `sirah voice` comprueba claves, `arecord`/`aplay` y Piper. Si falta algo,
-   imprime el problema con `Solución:` y cae al chat por texto.
+1. `sirah voice` comprueba claves, `arecord`, un reproductor (`aplay`, `paplay`
+   o `pw-play`) y Piper. Si falta algo, imprime el problema con `Solución:` y
+   cae al chat por texto.
 2. `arecord` entrega frames PCM crudos de 20 ms (16 kHz, mono, S16_LE). Cada
    turno arranca un proceso nuevo: al pararlo se vacía el buffer de la pausa.
-3. El VAD usa un suelo de ruido adaptativo por RMS, sin dependencias extra.
-   El turno incluye el pre-roll, empieza tras `VAD_START_FRAMES` frames de voz
-   y termina por `VAD_SILENCE_MS` de silencio o `VAD_MAX_TURN_MS`.
+3. El VAD usa un suelo de ruido adaptativo por RMS, con `VAD_MIN_START_RMS` y
+   `VAD_MIN_END_RMS` como mínimos y sin dependencias extra. El turno incluye el
+   pre-roll, empieza tras `VAD_START_FRAMES` frames de voz y termina por
+   `VAD_SILENCE_MS` de silencio o `VAD_MAX_TURN_MS`.
 4. El PCM se envuelve en WAV en memoria y se envía a Groq; el texto vuelve al
    mismo `Agent.respond()`. El audio no toca el disco.
 5. El texto limpio se imprime y se corta en frases. Piper sintetiza una frase
-   mientras suena la anterior, y `aplay` la reproduce; las etiquetas de acción
-   nunca se pronuncian.
+   mientras suena la anterior, y el reproductor elegido la reproduce; las
+   etiquetas de acción nunca se pronuncian.
 6. Mientras SIRAH habla el micrófono está parado (half-duplex). No hay
    interrupción por voz en v1. Un texto vacío o ruidoso se ignora y se vuelve a
    escuchar.
@@ -327,7 +329,8 @@ Las claves se muestran siempre enmascaradas.
 | `TTS_MODEL` | `models/voices/es_MX-claude-high.onnx` | `.onnx` y `.onnx.json` existentes |
 | `AUDIO_INPUT_DEVICE` | vacío | Nombre ALSA o vacío (defecto del sistema) |
 | `AUDIO_OUTPUT_DEVICE` | vacío | Nombre ALSA o vacío |
-| `VAD_MIN_RMS` | `350` | 0–5000 |
+| `VAD_MIN_START_RMS` | `1200` | 0–20000; alias antiguo: `VAD_MIN_RMS` |
+| `VAD_MIN_END_RMS` | `600` | 0–20000, menor que `VAD_MIN_START_RMS` |
 | `VAD_PREBUFFER_MS` | `300` | 100–1000 |
 | `VAD_START_FRAMES` | `3` | 1–10 (frames de 20 ms) |
 | `VAD_SILENCE_MS` | `400` | 200–1500 |
@@ -513,8 +516,8 @@ Pruebas manuales por hito (el dueño las ejecuta y las confirma):
 ## 15. Lo que no se construye
 
 - **Zep** en v1. Historial local primero; la interfaz queda para añadirlo.
-- **Palabra de activación.** WebRTC VAD es suficiente; openWakeWord solo
-  tiene modelos en inglés y licencia no comercial.
+- **Palabra de activación.** El VAD adaptativo por RMS es suficiente;
+  openWakeWord solo tiene modelos en inglés y licencia no comercial.
 - **`NOD`.** El firmware no lo implementa.
 - **I2C directo o WiFi.** Solo la interfaz y la dirección quedan preparadas.
 - **Character cards v1–v3.** El JSON nativo es suficiente.

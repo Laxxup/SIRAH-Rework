@@ -17,7 +17,7 @@ su fuente y la fecha de consulta. Lo que no se pudo verificar se marca como
 | STT | Groq `whisper-large-v3-turbo` | **Groq `whisper-large-v3-turbo`** | No |
 | TTS | Piper; voz `es_MX-claude-high` | **Piper + `es_MX-claude-high`**, invocado como proceso | No (se fija la voz) |
 | Visión | OpenCV + YuNet | **YuNet 2023mar con OpenCV 4.x** | No (se fija versión) |
-| VAD | VAD por energía/RMS (heredado) | **WebRTC VAD + umbral RMS** | Sí |
+| VAD | VAD por energía/RMS (heredado) | **VAD adaptativo por RMS** | No (WebRTC descartado el 31/10/2026) |
 | Palabra de activación | Ninguna | **Omitir en v1** | No |
 | Memoria | Historial local; Zep opcional | **Historial local primero; Zep solo opt-in** | No |
 | Serial | `pyserial` | **`pyserial`** | No |
@@ -216,27 +216,25 @@ El `.env` heredado define umbrales de energía/RMS (`VOICE_*_RMS`,
 
 | Opción | Por qué conviene | Costo | Licencia | Esfuerzo | Riesgos |
 |---|---|---|---|---|---|
-| **WebRTC VAD** (recomendada) | Diminuto, sin modelo, wheel `cp312` aarch64 verificada; 10/20/30 ms; ideal para micrófono cercano | Gratis | MIT | Bajo | Menos preciso que un VAD neuronal; puede cortar sílabas; necesita 16 kHz |
+| WebRTC VAD (descartada el 31/10/2026) | Diminuto y sin modelo, pero el VAD adaptativo por RMS cubre el caso sin dependencias | Gratis | MIT | Bajo | Menos preciso que un VAD neuronal; puede cortar sílabas; necesita 16 kHz |
 | Silero VAD | MIT, ~2 MB, <1 ms por chunk de 30 ms, 8/16 kHz, muy buena precisión | Gratis | MIT | Medio | Añade `onnxruntime` (~50 MB) o PyTorch; más instalación |
-| VAD por energía/RMS | Cero dependencias, ya configurado en el `.env` heredado | Gratis | — | Bajo | Falsos positivos con ruido; muy sensible al micrófono |
+| **VAD adaptativo por RMS** (actual) | Cero dependencias; el suelo se calibra con el ruido de fondo | Gratis | — | Bajo | Falsos positivos con ruido; muy sensible al micrófono |
 | openWakeWord | Palabra de activación local, código Apache 2.0 | Gratis | Código Apache 2.0; **modelos preentrenados CC BY-NC-SA 4.0** | Alto | Solo modelos en inglés; entrenar en español requiere datos y tiempo; falsos positivos |
 
 ### Recomendación
 
-**WebRTC VAD + umbral mínimo de RMS**, sin palabra de activación en v1.
+**VAD adaptativo por RMS**, sin palabra de activación en v1.
 
 - Frame de 20 ms a 16 kHz mono; pre-roll de 300 ms; inicio tras 3 frames de
   voz; fin tras 400 ms de silencio; máximo 10 s por turno.
-- El RMS mínimo evita que un ruido constante dispare el VAD.
+- El suelo de ruido adaptativo evita que un ruido constante dispare el VAD.
 - No usar openWakeWord en v1: sus modelos preentrenados son solo en inglés y
   con licencia no comercial; entrenar “SIRAH” en español es un proyecto
   aparte. Se puede añadir después si el dueño lo pide.
-- Si WebRTC corta demasiadas sílabas en las pruebas reales, subir a Silero
-  VAD como extra opcional, no como dependencia base.
+- Si el RMS no basta en las pruebas reales, evaluar Silero VAD como extra
+  opcional, no como dependencia base.
 
-**Fuentes:** PyPI, `webrtcvad-wheels 2.0.14.post1` (MIT; wheel cp312 aarch64,
-consultado 24/10/2026) <https://pypi.org/project/webrtcvad-wheels/>; Silero,
-*Silero VAD* (MIT, consultado 24/10/2026)
+**Fuentes:** Silero, *Silero VAD* (MIT, consultado 24/10/2026)
 <https://github.com/snakers4/silero-vad>; openWakeWord (solo inglés;
 modelos CC BY-NC-SA 4.0, consultado 24/10/2026)
 <https://github.com/dscripka/openWakeWord>.
@@ -316,8 +314,8 @@ de consumo del robot real siguen sin medir (`docs/PENDIENTES.md`).
 
 Omitir no es abandonar: es no cargar complejidad antes de que haga falta.
 
-- **Palabra de activación.** WebRTC VAD es suficiente para empezar; una
-  palabra mal entrenada genera falsos positivos y frustración.
+- **Palabra de activación.** El VAD adaptativo por RMS es suficiente para
+  empezar; una palabra mal entrenada genera falsos positivos y frustración.
 - **`NOD`.** El firmware lo acepta pero no mueve nada. No se enviará ni se
   ofrecerá al LLM hasta que exista una implementación física validada.
 - **Zep.** La memoria local cubre el caso de uso; Zep añade clave, nube y
@@ -351,7 +349,6 @@ Todas consultadas el **24/10/2026**, salvo la fecha propia de la página.
 | whisper.cpp | <https://github.com/ggml-org/whisper.cpp> | MIT |
 | Vosk modelos español | <https://alphacephei.com/vosk/models> | `small-es` 39 MB, Apache 2.0 |
 | Silero VAD | <https://github.com/snakers4/silero-vad> | MIT |
-| WebRTC VAD wheels | <https://pypi.org/project/webrtcvad-wheels/> | cp312 aarch64 |
 | openWakeWord | <https://github.com/dscripka/openWakeWord> | Solo inglés; modelos CC BY-NC-SA 4.0 |
 | YuNet | <https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet> | MIT; 2023mar fixed shape |
 | OpenCV wheels aarch64 | <https://pypi.org/project/opencv-python-headless/> | 4.14.0.94 con `cp37-abi3` |

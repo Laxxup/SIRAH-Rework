@@ -164,7 +164,7 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 - [x] Plan y estructura (`docs/ARQUITECTURA.md`).
 - [x] Proveedor LLM por defecto y modelo (Groq `openai/gpt-oss-20b`).
 - [x] Voz Piper concreta (`es_MX-claude-high` propuesta).
-- [x] VAD WebRTC y sin palabra de activación.
+- [x] VAD adaptativo por RMS y sin palabra de activación.
 - [x] Memoria local primero; Zep fuera de v1.
 - [x] Panel web Starlette en el hito 7 y autotest explícito.
 
@@ -241,7 +241,8 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 Pruebas del dueño, en orden:
 
 1. `uv run sirah voice --check`: graba 3 s y muestra el RMS y si el VAD detecta
-   voz. Ajusta `VAD_MIN_RMS` en `.env` si no detecta o si se dispara solo.
+   voz. Ajusta `VAD_MIN_START_RMS` y `VAD_MIN_END_RMS` en `.env` si no detecta o
+   si se dispara solo.
 2. `uv run sirah voice` y habla tres turnos. Debe imprimir "Micrófono activo.
    Ctrl-C para salir" y el aviso de que el audio se envía a Groq.
 3. Comprueba que no se oye a sí misma: la respuesta debe empezar después de

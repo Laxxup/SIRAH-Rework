@@ -89,8 +89,9 @@ es explícita, con aviso y confirmación.
 ### Voz (hito 4)
 
 La voz nunca se activa sola: solo con `uv run sirah voice`. Necesita
-`GROQ_API_KEY` (o Groq como LLM), `arecord`/`aplay` de `alsa-utils` y Piper con
-su modelo; si falta algo, SIRAH lo explica con `Solución:` y sigue por texto.
+`GROQ_API_KEY` (o Groq como LLM), `arecord` de `alsa-utils`, un reproductor
+(`aplay`, `paplay` o `pw-play`) y Piper con su modelo; si falta algo, SIRAH lo
+explica con `Solución:` y sigue por texto.
 
 - **Privacidad:** el audio del micrófono se envía a Groq para transcribirlo y
   **no se guarda en disco**; solo queda en memoria durante el turno. Al
@@ -99,8 +100,10 @@ su modelo; si falta algo, SIRAH lo explica con `Solución:` y sigue por texto.
   vacío al terminar, para no oírse a sí misma. En esta versión no se interrumpe
   por voz.
 - **Ajuste:** `uv run sirah voice --check` graba 3 segundos y muestra el nivel
-  RMS y si el VAD detecta voz; ajusta `VAD_MIN_RMS` en `.env`.
-- **Cierre:** Ctrl-C detiene `arecord`, `piper` y `aplay` antes de salir.
+  RMS y si el VAD detecta voz; ajusta `VAD_MIN_START_RMS` y `VAD_MIN_END_RMS`
+  en `.env`.
+- **Cierre:** Ctrl-C detiene `arecord`, `piper` y el reproductor de audio antes
+  de salir.
 
 La primera conversación hablada se valida con el dueño; ver
 [`docs/PENDIENTES.md`](docs/PENDIENTES.md).
@@ -120,7 +123,8 @@ La primera conversación hablada se valida con el dueño; ver
 - Los ojos y la visión aún no están implementados; el chat por texto y la voz
   funcionan sin ellos. Las etiquetas de acción se descartan sin mover hardware.
 - La voz está implementada pero su primera conversación real (micrófono,
-  altavoz, latencia y ajuste de `VAD_MIN_RMS`) la valida el dueño.
+  altavoz, latencia y ajuste de `VAD_MIN_START_RMS`/`VAD_MIN_END_RMS`) la valida
+  el dueño.
 - El firmware no implementa `NOD` ni persiste `MODE`; SIRAH no los usa.
 - La pose `TIRED` y la alimentación sostenida de los servos aún no están
   validadas en el robot real.
