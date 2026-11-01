@@ -300,6 +300,34 @@ def test_doctor_reports_vad_floor_and_thresholds(tmp_path: Path, monkeypatch) ->
     assert "inicio 2400" in result.detail and "fin 1800" in result.detail
 
 
+def test_doctor_vad_records_the_full_calibration_window(tmp_path: Path, monkeypatch) -> None:
+    config = _config(tmp_path, VAD_NOISE_CALIBRATION_MS="3000")
+    noise = array("h", [1500] * 320).tobytes() * 200
+    seen: dict[str, object] = {}
+
+    class Done:
+        returncode = 0
+        stdout = noise
+        stderr = b""
+
+    def run(args, **kwargs):
+        seen["args"] = args
+        seen["timeout"] = kwargs.get("timeout")
+        return Done()
+
+    monkeypatch.setattr("sirah.doctor.shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr("sirah.doctor.subprocess.run", run)
+
+    result = _check_vad(config)
+
+    args = seen["args"]
+    assert isinstance(args, list)
+    assert args[args.index("-d") + 1] == "4"
+    assert seen["timeout"] == 6
+    assert result.status == "ok"
+    assert "suelo 1500" in result.detail
+
+
 def test_doctor_vad_warns_when_the_microphone_captures_nothing(tmp_path: Path, monkeypatch) -> None:
     config = _config(tmp_path)
 

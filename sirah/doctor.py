@@ -702,6 +702,9 @@ def _check_vad(config: Config) -> Health:
             "falta arecord",
             "Instala alsa-utils: `sudo apt install alsa-utils`.",
         )
+    # La calibración adaptativa necesita al menos este tiempo de audio para
+    # estabilizar el suelo de ruido; no basta con 1 s.
+    duration_s = max(1, config.vad_noise_calibration_ms // 1000 + 1)
     args = [
         "arecord",
         "-q",
@@ -714,12 +717,12 @@ def _check_vad(config: Config) -> Health:
         "-c",
         "1",
         "-d",
-        "1",
+        str(duration_s),
     ]
     if config.audio_input_device:
         args += ["-D", config.audio_input_device]
     try:
-        done = subprocess.run(args, capture_output=True, timeout=3, check=False)
+        done = subprocess.run(args, capture_output=True, timeout=duration_s + 2, check=False)
     except subprocess.TimeoutExpired:
         return Health(
             "VAD",
