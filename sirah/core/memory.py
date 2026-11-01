@@ -8,6 +8,15 @@ from typing import Literal
 
 Role = Literal["user", "assistant"]
 
+MAX_STORED_TEXT_CHARS = 4000
+
+
+def limit_text(text: str, limit: int = MAX_STORED_TEXT_CHARS) -> str:
+    """Recorta el texto para persistencia acotada sin dejar campos parciales."""
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "…"
+
 
 @dataclass(frozen=True, slots=True)
 class Message:

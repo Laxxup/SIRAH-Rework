@@ -6,7 +6,7 @@ import logging
 from collections.abc import AsyncIterator, Callable
 
 from sirah.core.actions import Action, ActionParser
-from sirah.core.memory import Memory, Message
+from sirah.core.memory import Memory, Message, limit_text
 from sirah.core.persona import Persona
 from sirah.core.text import PlainTextCleaner
 
@@ -201,7 +201,9 @@ class Agent:
                 logger.warning("El LLM no devolvió texto; reintentando una vez")
 
         if answer:
-            self.memory.add_turn(user_text.strip(), answer)
+            user_stored = limit_text(user_text.strip())
+            answer_stored = limit_text(answer)
+            self.memory.add_turn(user_stored, answer_stored)
         if parser.actions:
             logger.debug("Acciones del LLM: %s", parser.actions)
             if on_actions is not None:

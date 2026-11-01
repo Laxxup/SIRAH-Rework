@@ -14,13 +14,13 @@ from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sirah.core.memory import Message, Role
+from sirah.core.memory import MAX_STORED_TEXT_CHARS, Message, Role, limit_text
 
 logger = logging.getLogger("sirah.history")
 
 MAX_LINES = 200
 MAX_BYTES = 256_000
-MAX_TEXT_CHARS = 4000
+MAX_TEXT_CHARS = MAX_STORED_TEXT_CHARS
 _COMPACT_LINES = 50
 _KEEP_LINES = 150
 
@@ -102,7 +102,7 @@ class HistoryFile:
     def append(self, role: Role, text: str) -> None:
         if not text.strip():
             return
-        text = text[:MAX_TEXT_CHARS] + ("…" if len(text) > MAX_TEXT_CHARS else "")
+        text = limit_text(text, MAX_TEXT_CHARS)
         record = {
             "ts": datetime.now(UTC).isoformat(timespec="seconds"),
             "role": role,
