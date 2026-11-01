@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import re
+
 _MARKDOWN = "`"
 _BULLETS = "-+•"
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
 
 class PlainTextCleaner:
@@ -34,9 +37,7 @@ class PlainTextCleaner:
 
     def feed(self, text: str) -> str:
         out: list[str] = []
-        for char in text:
-            if char == "\r":
-                char = "\n"
+        for char in _CONTROL.sub("", text):
             if char == "*":
                 self._flush_dots(out)
                 if not self._stars:

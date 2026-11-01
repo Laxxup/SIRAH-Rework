@@ -101,3 +101,9 @@ def test_keeps_a_multiplication_with_spaces() -> None:
 def test_collapses_a_double_period_but_keeps_an_ellipsis() -> None:
     assert _clean("Entiendo..") == "Entiendo."
     assert _clean("Entiendo...") == "Entiendo..."
+
+
+def test_drops_terminal_control_characters() -> None:
+    assert _clean("\x1b[2Jhola\x07") == "[2Jhola"
+    assert _clean("a\rb") == "ab"
+    assert _clean("a\tb\nc") == "a\tb\nc"
