@@ -125,7 +125,7 @@ def _check_llm(config: Config, offline: bool) -> Health:
 
     url = f"{config.llm_base_url}/models"
     try:
-        with httpx.Client(timeout=5.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=5.0, follow_redirects=False, trust_env=False) as client:
             response = client.get(url, headers={"Authorization": f"Bearer {config.llm_api_key}"})
     except httpx.HTTPError as exc:
         return Health(
