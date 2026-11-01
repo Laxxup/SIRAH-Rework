@@ -7,6 +7,7 @@ check: lint test
 lint:
 	$(UV) run ruff check .
 	$(UV) run ruff format --check .
+	bash -n setup.sh opencode-setup/setup.sh
 
 format:
 	$(UV) run ruff format .
