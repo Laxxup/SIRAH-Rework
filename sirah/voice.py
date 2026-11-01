@@ -361,6 +361,14 @@ async def run_voice(
                 "solo se conserva el historial guardado.\n\n"
             )
             return await run_terminal(config, persona, identity=identity, language=language)
+        except Exception as exc:
+            logger.exception("Fallo inesperado durante la sesión de voz")
+            write(f"[FALLA] Voz: {exc}\n")
+            write(
+                "[AVISO] Sigo por texto. La conversación en memoria no se traslada: "
+                "solo se conserva el historial guardado.\n\n"
+            )
+            return await run_terminal(config, persona, identity=identity, language=language)
     finally:
         await loop.close()
     return 0
