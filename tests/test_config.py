@@ -183,6 +183,19 @@ def test_quoted_values_and_comments(tmp_path: Path) -> None:
     assert config.llm_api_key == "key # literal"
 
 
+def test_update_env_file_replaces_the_last_duplicate(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "LLM_API_KEY=vieja\nOTRA=1\nLLM_API_KEY=nueva\n",
+        encoding="utf-8",
+    )
+
+    update_env_file(env_file, {"LLM_API_KEY": "escrita"})
+
+    assert read_env_file(env_file)["LLM_API_KEY"] == "escrita"
+    assert env_file.read_text(encoding="utf-8").count("LLM_API_KEY=") == 1
+
+
 @pytest.mark.parametrize(
     ("key", "value", "message"),
     [

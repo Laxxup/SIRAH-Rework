@@ -539,12 +539,19 @@ def update_env_file(path: Path, updates: Mapping[str, str]) -> None:
         lines = ["# Configuración de SIRAH."]
 
     remaining = dict(updates)
+    last: dict[str, int] = {}
+    for index, line in enumerate(lines):
+        match = _ENV_LINE.match(line.strip())
+        if match and match.group(1) in remaining:
+            last[match.group(1)] = index
+
     result: list[str] = []
-    for line in lines:
+    for index, line in enumerate(lines):
         match = _ENV_LINE.match(line.strip())
         if match and match.group(1) in remaining:
             key = match.group(1)
-            result.append(f"{key}={_format_env_value(remaining.pop(key))}")
+            if last[key] == index:
+                result.append(f"{key}={_format_env_value(remaining.pop(key))}")
         else:
             result.append(line)
     for key, value in remaining.items():
