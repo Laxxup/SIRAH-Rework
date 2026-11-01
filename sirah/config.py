@@ -234,11 +234,6 @@ class Config:
     log_level: str
 
     @property
-    def vad_min_rms(self) -> int:
-        """Alias histórico del mínimo de inicio adaptativo."""
-        return self.vad_min_start_rms
-
-    @property
     def eyes_device(self) -> Path | None:
         """Ruta del dispositivo serial, o None si los ojos están apagados."""
         if not self.eyes_address:
