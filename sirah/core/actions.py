@@ -24,6 +24,10 @@ def _is_truncated_action(buffer: str) -> bool:
     else:
         return False
     content = content.lstrip()
+    # Una llave solitaria o sin prefijo real de una acción no se considera
+    # etiqueta cortada: se muestra el texto pendiente tal cual.
+    if not content:
+        return False
     return any(word.startswith(content) or content.startswith(word) for word in _ACTION_NAMES)
 
 
