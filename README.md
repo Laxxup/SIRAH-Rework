@@ -140,8 +140,8 @@ arranque cuando falta micrófono. Los detalles y criterios de cierre están en
 ## Créditos y equipo
 
 - Proyecto: S.I.R.A.H.
-- Repositorio: https://github.com/Laxxup/SIRAH-Rework
-- Autor y supervisor: https://github.com/Laxxup
+- Repositorio: @Laxxup/SIRAH-Rework
+- Autor y supervisor: @Laxxup
 - Contacto: por GitHub Issues o discusiones del repositorio.
 - Hardware pendiente: fotos, medición de fuente, reconexión y resistencia (HIL).
 
@@ -155,5 +155,4 @@ arranque cuando falta micrófono. Los detalles y criterios de cierre están en
 
 ## Contacto
 
-- Enlace al repositorio: https://github.com/Laxxup/SIRAH-Rework
-- Perfil del mantenedor: https://github.com/Laxxup
+- Mantenedor: @Laxxup
