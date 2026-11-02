@@ -324,3 +324,31 @@ validados el 01/11/2026; los puntos 3 y 4 siguen pendientes.
    aviso de ganancia indica `alsamixer -c 0` (F4) o pavucontrol → Grabación.
 4. `sirah doctor` graba 1 s para medir el suelo. En una Raspberry Pi sin
    micrófono debe mostrar un aviso, no fallar.
+
+## Auditoría documental del README (01/11/2026)
+
+- [ ] **Modelo exacto del ESP32 sin confirmar.**
+  Falta: verificar la placa real y su variante. Importa porque los pines I2C y el
+  cableado dependen de la variante. Cierre: indicarlo en `docs/HARDWARE.md`.
+- [ ] **Amperaje real de la fuente de 5 V con 6 servos en movimiento.**
+  Falta: medición bajo carga. Importa porque la fuente puede quedar corta.
+  Cierre: medir con multímetro y registrar valor.
+- [ ] **Licencia de la mecánica EyeMech (Will Cogley).**
+  Falta: confirmar términos del sitio original. Importa porque se atribuye
+  y no se redistribuyen STL. Cierre: enlace y licencia verificados.
+- [ ] **Capturas y GIFs en `assets/`.**
+  Falta: screenshots de terminal, `doctor` y `voice --check`. Importa: sirven
+  para un README público. Cierre: imágenes propias en `assets/`.
+- [ ] **Roles del equipo y contacto.**
+  Falta: asesor, integrantes, correos o canales. Importa para atribución.
+  Cierre con datos aprobados por el equipo.
+
+### Criterio de cierre del VAD (puntos 3 y 4)
+
+- [ ] **Punto 3:** calibración con voz durante el warmup (`sirah voice --check`
+  y una sesión real). Pasa si el suelo se mantiene cerca del valor medido en
+  silencio, los umbrales quedan usable y un turno de voz después del ruido se
+  transcribe. Falla si la frase se ignora o el suelo se dispara.
+- [ ] **Punto 4:** `sirah doctor` en una máquina sin micrófono. Pasa si muestra
+  un aviso y no falla; en una máquina con micrófono, debe medir el suelo sin
+  error bloqueante.

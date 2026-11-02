@@ -9,7 +9,7 @@ validación física.
 
 **Validación actual:** `make check` pasa en desarrollo local, sin hardware ni
 red; `make guard` protege rutas sensibles. Ejecuta `make check` para la cifra
-de pruebas actual. CI: TODO.
+de pruebas actual. CI no está configurado en el repositorio.
 
 ## Qué es SIRAH
 
@@ -43,7 +43,7 @@ validada. SIRAH no afirma acciones físicas que no ocurrieron.
 
 ## Demo y media
 
-TODO: screenshots, GIFs y fotos del montaje todavía no están disponibles.
+Pendiente: screenshots, GIFs y fotos del montaje todavía no están disponibles.
 No incluir activamente imágenes hasta tener una fuente propia y revisada.
 
 ## Arquitectura
@@ -64,15 +64,15 @@ Lee `docs/ARQUITECTURA.md` para los flujos por texto y voz, y
 
 | Componente | Cantidad | Estado |
 |---|---:|---|
-| ESP32, modelo exacto por confirmar | 1 | Firmware listo; hardware sin HIL completo |
+| ESP32, modelo por confirmar con la placa real | 1 | Firmware listo; hardware sin HIL completo |
 | PCA9685, dirección `0x40` | 1 | Extremos calibrados; integración pendiente |
 | Servo SG90 | 6 | Calibración candidata; `TIRED` pendiente |
-| Fuente externa 5 V | 1 | TODO: amperaje real medido |
+| Fuente externa 5 V | 1 | Amperaje real pendiente de medición |
 | Cámara USB / V4L2 | 1 (opt-in) | Software listo; visión pendiente |
 | Micrófono y altavoz | 1 de cada (opt-in) | Voz validada en una máquina |
 
 Mecánica de ojos: EyeMech ε3.2 es una inspiración; SIRAH no incluye archivos
-STL. Las licencias de esos diseños: TODO por confirmar.
+STL. Licencia del EyeMech: pendiente de confirmar.
 
 ## Software y requisitos
 
@@ -118,8 +118,15 @@ SIRAH/
 - `make check`: pruebas offline, sin hardware ni red.
 - `make guard`: rutas protegidas intactas.
 - `voice --check`: graba 3 s y muestra RMS/VAD.
-- HIL: fotos, medición, reconexión y resistencia TODO.
+- HIL: fotos, medición, reconexión y resistencia, todo pendiente.
 - Voz: pendientes VAD con ruido, corte de red y cierre limpio.
+
+## Limitaciones conocidas
+
+SIRAH ya cubre software de texto, parcialmente voz y firmware base para ojos, pero no
+valida hardware de ojos con carga real, visión con cámara, VAD con ruido real ni
+arranque cuando falta micrófono. Los detalles y criterios de cierre están en
+`docs/PENDIENTES.md`.
 
 ## Roadmap
 
@@ -131,8 +138,6 @@ SIRAH/
 - Mejorar pruebas HIL.
 
 ## Créditos y equipo
-
-*(Aquí va: crédito de la institución, autoría y contacto vía GitHub.)*
 
 - Proyecto: S.I.R.A.H.
 - Institución: Instituto Tecnológico de Ciudad Madero (ITCM).
