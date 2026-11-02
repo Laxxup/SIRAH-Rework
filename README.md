@@ -140,10 +140,8 @@ arranque cuando falta micrófono. Los detalles y criterios de cierre están en
 ## Créditos y equipo
 
 - Proyecto: S.I.R.A.H.
-- Institución: Instituto Tecnológico de Ciudad Madero (ITCM).
 - Repositorio: https://github.com/Laxxup/SIRAH-Rework
 - Autor y supervisor: https://github.com/Laxxup
-- Taller de alumnos: Comunidad Robótica.
 - Contacto: por GitHub Issues o discusiones del repositorio.
 - Hardware pendiente: fotos, medición de fuente, reconexión y resistencia (HIL).
 
