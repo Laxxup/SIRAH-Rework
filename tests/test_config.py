@@ -10,6 +10,7 @@ from sirah.config import (
     ConfigError,
     active_card_path,
     identity_for,
+    is_ollama_url,
     load_config,
     load_persona_settings,
     mask_secret,
@@ -40,10 +41,12 @@ def _settings(tmp_path: Path, text: str) -> Path:
 
 def test_defaults(tmp_path: Path) -> None:
     config = _load(tmp_path)
-    assert config.llm_base_url == "https://api.groq.com/openai/v1"
-    assert config.llm_model == "openai/gpt-oss-20b"
+    assert config.llm_base_url == "https://ollama.com/v1"
+    assert config.llm_model == "gemma4:31b"
     assert config.llm_max_tokens == 1024
-    assert config.llm_reasoning_effort == "low"
+    assert config.llm_reasoning_effort == ""
+    assert config.llm_timeout_s == 20
+    assert config.llm_top_p is None
     assert config.user_name == ""
     assert config.llm_api_key == ""
     assert config.eyes_address == ""
@@ -56,6 +59,26 @@ def test_defaults(tmp_path: Path) -> None:
     assert config.persona_settings.language == "es"
     assert config.persona_settings.identity == "card"
     assert config.persona_settings.exists is False
+
+
+def test_groq_preset_keeps_low_reasoning(tmp_path: Path) -> None:
+    config = _load(tmp_path, LLM_BASE_URL="https://api.groq.com/openai/v1")
+    assert config.llm_model == "openai/gpt-oss-20b"
+    assert config.llm_reasoning_effort == "low"
+
+
+def test_ollama_url_hostname() -> None:
+    assert is_ollama_url("https://ollama.com/v1") is True
+    assert is_ollama_url("https://api.ollama.com/v1") is True
+    assert is_ollama_url("https://notollama.com/v1") is False
+    assert is_ollama_url("https://ollama.com.evil.example/v1") is False
+    assert is_ollama_url("") is False
+
+
+def test_top_p_is_optional_and_validated(tmp_path: Path) -> None:
+    assert _load(tmp_path, LLM_TOP_P="0.95").llm_top_p == 0.95
+    with pytest.raises(ConfigError, match="LLM_TOP_P"):
+        _load(tmp_path, LLM_TOP_P="1.5")
 
 
 def test_settings_defaults_when_file_is_missing(tmp_path: Path) -> None:
@@ -246,8 +269,11 @@ def test_vad_prebuffer_must_cover_start_frames(tmp_path: Path) -> None:
 
 
 def test_stt_key_falls_back_to_groq_llm(tmp_path: Path) -> None:
-    config = _load(tmp_path, LLM_API_KEY="llm-key")
-    assert config.stt_api_key == "llm-key"
+    default = _load(tmp_path, LLM_API_KEY="llm-key")
+    assert default.stt_api_key == ""
+
+    groq = _load(tmp_path, LLM_API_KEY="llm-key", LLM_BASE_URL="https://api.groq.com/openai/v1")
+    assert groq.stt_api_key == "llm-key"
 
     other = _load(tmp_path, LLM_API_KEY="llm-key", LLM_BASE_URL="https://example.com/v1")
     assert other.stt_api_key == ""

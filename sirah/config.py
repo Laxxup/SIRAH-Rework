@@ -18,6 +18,10 @@ DEFAULT_PERSONA = PROJECT_ROOT / "config" / "persona" / "sirah.json"
 DEFAULT_SETTINGS = PROJECT_ROOT / "config" / "sirah.toml"
 DEFAULT_VISION_MODEL = PROJECT_ROOT / "models" / "face_detection_yunet_2023mar.onnx"
 DEFAULT_TTS_MODEL = PROJECT_ROOT / "models" / "voices" / "es_MX-claude-high.onnx"
+OLLAMA_BASE_URL = "https://ollama.com/v1"
+OLLAMA_MODEL = "gemma4:31b"
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+GROQ_MODEL = "openai/gpt-oss-20b"
 
 _ENV_LINE = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 _INLINE_COMMENT = re.compile(r"\s+#")
@@ -37,6 +41,12 @@ def is_groq_url(base: str) -> bool:
     """True si la URL base apunta al host de Groq (y no a uno parecido)."""
     host = urlparse(base).hostname or ""
     return host == "groq.com" or host.endswith(".groq.com")
+
+
+def is_ollama_url(base: str) -> bool:
+    """True si la URL base apunta a Ollama Cloud (y no a un host parecido)."""
+    host = urlparse(base).hostname or ""
+    return host == "ollama.com" or host.endswith(".ollama.com")
 
 
 class ConfigError(Exception):
@@ -215,6 +225,7 @@ class Config:
     llm_timeout_s: float
     llm_max_tokens: int
     llm_temperature: float
+    llm_top_p: float | None
     llm_reasoning_effort: str
     user_name: str
     persona_path: Path
@@ -434,7 +445,7 @@ def load_config(
                 "la ruta del dispositivo debe ser absoluta",
             )
 
-    base_url = _text(values, "LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    base_url = _text(values, "LLM_BASE_URL", OLLAMA_BASE_URL).rstrip("/")
     parsed_url = urlparse(base_url)
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
         raise ConfigError("LLM_BASE_URL", base_url, "debe ser una URL http(s) válida")
@@ -446,17 +457,24 @@ def load_config(
             "HTTP solo se admite en loopback (127.0.0.1, localhost, ::1); usa HTTPS",
         )
 
-    model = _text(values, "LLM_MODEL", "openai/gpt-oss-20b")
+    # El preset por defecto depende del proveedor: Gemma 4 piensa en booleano y
+    # "low" activaría el razonamiento; Groq gpt-oss-20b lo necesita bajo.
+    provider_model = OLLAMA_MODEL if is_ollama_url(base_url) else GROQ_MODEL
+    model = _text(values, "LLM_MODEL", provider_model)
     if not model:
         raise ConfigError("LLM_MODEL", model, "no puede estar vacío")
 
-    reasoning_effort = _optional_text(values, "LLM_REASONING_EFFORT", "low").lower()
+    default_effort = "" if is_ollama_url(base_url) else "low"
+    reasoning_effort = _optional_text(values, "LLM_REASONING_EFFORT", default_effort).lower()
     if reasoning_effort not in {"", "low", "medium", "high"}:
         raise ConfigError(
             "LLM_REASONING_EFFORT",
             reasoning_effort,
             "debe ser low, medium, high o vacío",
         )
+
+    top_p_raw = _optional_text(values, "LLM_TOP_P", "")
+    top_p = _number(values, "LLM_TOP_P", 1.0, 0, 1) if top_p_raw else None
 
     log_level = _text(values, "LOG_LEVEL", "INFO").upper()
     if log_level not in _LOG_LEVELS:
@@ -506,9 +524,10 @@ def load_config(
         llm_api_key=_text(values, "LLM_API_KEY"),
         llm_base_url=base_url,
         llm_model=model,
-        llm_timeout_s=_number(values, "LLM_TIMEOUT_S", 60.0, 5, 300),
+        llm_timeout_s=_number(values, "LLM_TIMEOUT_S", 20.0, 5, 300),
         llm_max_tokens=_integer(values, "LLM_MAX_TOKENS", 1024, 32, 4096),
         llm_temperature=_number(values, "LLM_TEMPERATURE", 0.6, 0, 2),
+        llm_top_p=top_p,
         llm_reasoning_effort=reasoning_effort,
         user_name=_text(values, "USER_NAME").replace("\r", " ").replace("\n", " "),
         persona_path=_path(values, "SIRAH_PERSONA", settings.active),
