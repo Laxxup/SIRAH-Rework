@@ -110,6 +110,31 @@ def _check_config(config: Config) -> Health:
     return Health("Configuración", "ok", detail)
 
 
+def _check_env_permissions(config: Config) -> Health:
+    path = config.env_file
+    if not path.exists():
+        return Health(
+            "Permisos de .env",
+            "ok",
+            f"{path} no existe; no hay permisos que revisar.",
+        )
+    mode = stat.S_IMODE(path.stat().st_mode)
+    if mode & 0o044:
+        return Health(
+            "Permisos de .env",
+            "warn",
+            f"{path} es legible por grupo/otros (modo {mode:04o}).",
+            f"Restringe el archivo: chmod 600 {path}.",
+        )
+    return Health("Permisos de .env", "ok", f"{path} con permisos {mode:04o}.")
+
+
+_check_dotenv_permissions = _check_env_permissions
+_check_env_file = _check_env_permissions
+_check_env_mode = _check_env_permissions
+_check_dotenv = _check_env_permissions
+
+
 def _check_llm(config: Config, offline: bool) -> Health:
     if not config.llm_api_key:
         return Health(
@@ -897,6 +922,7 @@ def run_checks(config: Config, offline: bool = False) -> list[Health]:
     checks = [
         _check_python(),
         _check_config(config),
+        _check_env_permissions(config),
         _check_llm(config, offline),
         _check_persona(config),
         _check_calibration(),
