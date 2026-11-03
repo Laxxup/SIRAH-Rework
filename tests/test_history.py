@@ -151,3 +151,22 @@ def test_long_messages_are_truncated(tmp_path: Path) -> None:
     history.append("user", "x" * 5000)
     assert history.load(1)[0].content.endswith("…")
     assert len(history.load(1)[0].content) == 4001
+
+
+def test_append_flushes_to_disk(tmp_path: Path, monkeypatch) -> None:
+    calls: list[int] = []
+    monkeypatch.setattr("sirah.adapters.history_file.os.fsync", lambda fd: calls.append(fd))
+    history = HistoryFile(tmp_path / "default.jsonl")
+    history.append("user", "hola")
+
+    assert calls
+
+
+def test_compaction_calls_fsync(tmp_path: Path, monkeypatch) -> None:
+    calls: list[int] = []
+    monkeypatch.setattr("sirah.adapters.history_file.os.fsync", lambda fd: calls.append(fd))
+    history = HistoryFile(tmp_path / "default.jsonl")
+    for number in range(MAX_LINES + 1):
+        history.append("user", f"mensaje {number}")
+
+    assert len(calls) >= 2

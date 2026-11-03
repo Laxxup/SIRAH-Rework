@@ -124,6 +124,8 @@ class HistoryFile:
                     )
                     with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
                         handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                        handle.flush()
+                        os.fsync(handle.fileno())
                     os.chmod(self.path, 0o600)
                     self._compact_if_needed()
                 finally:
@@ -149,7 +151,15 @@ class HistoryFile:
             descriptor = os.open(temporary, os.O_CREAT | os.O_TRUNC | os.O_WRONLY, 0o600)
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 handle.write("\n".join(lines) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
             os.replace(temporary, self.path)
+            with contextlib.suppress(OSError):
+                directory = os.open(self.path.parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
         except OSError:
             with contextlib.suppress(FileNotFoundError):
                 temporary.unlink()
