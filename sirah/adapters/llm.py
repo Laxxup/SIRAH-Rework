@@ -66,6 +66,7 @@ class LLMClient:
         self.reasoning_effort = reasoning_effort
         self.retries = max(0, retries)
         self.last_finish_reason: str | None = None
+        self.last_usage: dict[str, object] = {}
 
     async def stream(self, messages: Sequence[Message]) -> AsyncIterator[str]:
         if not self.api_key:
@@ -121,6 +122,7 @@ class LLMClient:
         }
         timeout = httpx.Timeout(self.timeout_s, connect=min(10.0, self.timeout_s))
         self.last_finish_reason = None
+        self.last_usage = {}
 
         try:
             async with (
@@ -212,6 +214,7 @@ class LLMClient:
         usage: dict[str, object],
     ) -> None:
         self.last_finish_reason = finish_reason
+        self.last_usage = usage
         details = usage.get("completion_tokens_details")
         reasoning = details.get("reasoning_tokens") if isinstance(details, dict) else None
         prompt_details = usage.get("prompt_tokens_details")

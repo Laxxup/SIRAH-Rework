@@ -82,6 +82,7 @@ def test_every_turn_logs_finish_reason_and_usage(caplog) -> None:
     assert "completion_tokens=20" in caplog.text
     assert "reasoning_tokens=7" in caplog.text
     assert llm.last_finish_reason == "stop"
+    assert llm.last_usage["prompt_tokens"] == 30
 
 
 def test_reasoning_delta_is_not_emitted(caplog) -> None:
