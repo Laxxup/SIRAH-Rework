@@ -98,7 +98,14 @@ def test_ensure_settings_without_example_does_nothing(tmp_path: Path) -> None:
     assert not (tmp_path / "config" / "sirah.toml").exists()
 
 
-def _patch_setup(monkeypatch, tmp_path, env_content="", ask_overrides=None):
+def _patch_setup(
+    monkeypatch,
+    tmp_path,
+    env_content="",
+    ask_overrides=None,
+    choose_result=None,
+    secret="sk-test-llm",
+):
     env_file = tmp_path / ".env"
     if env_content:
         env_file.write_text(env_content, encoding="utf-8")
@@ -112,7 +119,7 @@ def _patch_setup(monkeypatch, tmp_path, env_content="", ask_overrides=None):
     )
     monkeypatch.setattr("sirah.setup_wizard.detect_serial_ports", lambda: [])
     monkeypatch.setattr("sirah.setup_wizard.detect_cameras", lambda: [])
-    monkeypatch.setattr("sirah.setup_wizard._choose", lambda *a, **k: None)
+    monkeypatch.setattr("sirah.setup_wizard._choose", lambda *a, **k: choose_result)
     monkeypatch.setattr("sirah.setup_wizard.ensure_settings_file", lambda *a, **k: None)
     monkeypatch.setattr("sirah.setup_wizard.find_piper", lambda: None)
 
@@ -136,7 +143,7 @@ def _patch_setup(monkeypatch, tmp_path, env_content="", ask_overrides=None):
     def fake_secret(prompt):
         if "GROQ" in prompt.upper():
             return ""
-        return "sk-test-llm"
+        return secret
 
     monkeypatch.setattr("sirah.setup_wizard._ask_secret", fake_secret)
     return env_file, captured
@@ -161,6 +168,49 @@ def test_setup_does_not_override_base_url_with_opencode(monkeypatch, tmp_path: P
     assert rc == 0
     assert "LLM_BASE_URL" not in captured
     assert "LLM_MODEL" not in captured
+
+
+def test_setup_defaults_to_ollama_cloud(monkeypatch, tmp_path: Path) -> None:
+    env_file, captured = _patch_setup(monkeypatch, tmp_path)
+    assert run_setup(env_file) == 0
+    assert captured["LLM_BASE_URL"] == "https://ollama.com/v1"
+    assert captured["LLM_MODEL"] == "gemma4:31b"
+    assert captured["LLM_REASONING_EFFORT"] == ""
+
+
+def test_setup_writes_low_reasoning_for_groq(monkeypatch, tmp_path: Path) -> None:
+    env_file, captured = _patch_setup(
+        monkeypatch,
+        tmp_path,
+        choose_result="Groq (openai/gpt-oss-20b)",
+    )
+    assert run_setup(env_file) == 0
+    assert captured["LLM_BASE_URL"] == "https://api.groq.com/openai/v1"
+    assert captured["LLM_MODEL"] == "openai/gpt-oss-20b"
+    assert captured["LLM_REASONING_EFFORT"] == "low"
+
+
+def test_switching_to_ollama_asks_for_a_new_key_and_clears_thinking(
+    monkeypatch, tmp_path: Path
+) -> None:
+    env_file, captured = _patch_setup(
+        monkeypatch,
+        tmp_path,
+        env_content=(
+            "LLM_BASE_URL=https://api.groq.com/openai/v1\n"
+            "LLM_MODEL=openai/gpt-oss-20b\n"
+            "LLM_API_KEY=clave-vieja\n"
+            "LLM_REASONING_EFFORT=low\n"
+        ),
+        ask_overrides={"cambiar de proveedor": True},
+        choose_result="Ollama Cloud (gemma4:31b)",
+        secret="clave-nueva",
+    )
+    assert run_setup(env_file) == 0
+    assert captured["LLM_BASE_URL"] == "https://ollama.com/v1"
+    assert captured["LLM_MODEL"] == "gemma4:31b"
+    assert captured["LLM_REASONING_EFFORT"] == ""
+    assert captured["LLM_API_KEY"] == "clave-nueva"
 
 
 def test_setup_clears_eyes_address_when_no_ports_and_changing(monkeypatch, tmp_path: Path) -> None:

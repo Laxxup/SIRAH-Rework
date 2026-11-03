@@ -13,9 +13,14 @@ import httpx
 from serial.tools import list_ports
 
 from sirah.config import (
+    GROQ_BASE_URL,
+    GROQ_MODEL,
+    OLLAMA_BASE_URL,
+    OLLAMA_MODEL,
     PROJECT_ROOT,
     ConfigError,
     is_groq_url,
+    is_ollama_url,
     mask_secret,
     read_env_file,
     sha256_file,
@@ -244,29 +249,54 @@ def run_setup(env_file: Path | None = None) -> int:
     updates: dict[str, str] = {}
 
     # 1. LLM
+    base = current.get("LLM_BASE_URL", "").strip()
+    is_ollama = is_ollama_url(base)
+    provider_changed = False
+    if base and not is_groq_url(base) and not is_ollama:
+        print(f"Proveedor actual: {base} (personalizado)")
+        if _ask_yes_no("¿Cambiar a Ollama Cloud o Groq?", False):
+            base = ""
+    elif base:
+        name = "Ollama Cloud" if is_ollama else "Groq"
+        print(f"Proveedor actual: {name} ({base})")
+        if _ask_yes_no("¿Quieres cambiar de proveedor?", False):
+            base = ""
+
+    if not base:
+        labels = [
+            f"Ollama Cloud ({OLLAMA_MODEL})",
+            f"Groq ({GROQ_MODEL})",
+        ]
+        selected = _choose("Elige el proveedor del LLM", labels, 0) or labels[0]
+        if selected == labels[1]:
+            updates["LLM_BASE_URL"] = GROQ_BASE_URL
+            updates["LLM_MODEL"] = GROQ_MODEL
+            updates["LLM_REASONING_EFFORT"] = "low"
+        else:
+            updates["LLM_BASE_URL"] = OLLAMA_BASE_URL
+            updates["LLM_MODEL"] = OLLAMA_MODEL
+            updates["LLM_REASONING_EFFORT"] = ""
+        base = updates["LLM_BASE_URL"]
+        provider_changed = True
+        print(f"Proveedor: {selected}.")
+
     existing_key = current.get("LLM_API_KEY", "").strip()
-    if existing_key:
+    if existing_key and not provider_changed:
         print(f"LLM_API_KEY ya configurada: {mask_secret(existing_key)}")
         if _ask_yes_no("¿Quieres cambiarla?", False):
             new_key = _ask_secret("Nueva LLM_API_KEY")
             if new_key:
                 updates["LLM_API_KEY"] = new_key
     else:
-        print("Necesitas una clave de LLM (por ejemplo, Groq Free).")
+        if existing_key:
+            print("La clave actual puede no servir para el proveedor nuevo.")
+        else:
+            print("Necesitas una clave de LLM (Ollama Cloud o Groq).")
         new_key = _ask_secret("LLM_API_KEY")
         if new_key:
             updates["LLM_API_KEY"] = new_key
         else:
             print("Aviso: sin clave no habrá conversación. Puedes ejecutar setup otra vez.")
-
-    base = current.get("LLM_BASE_URL", "").strip()
-    if not base:
-        updates["LLM_BASE_URL"] = "https://api.groq.com/openai/v1"
-        updates["LLM_MODEL"] = "openai/gpt-oss-20b"
-        base = updates["LLM_BASE_URL"]
-        print("Proveedor por defecto: Groq Free (openai/gpt-oss-20b).")
-    else:
-        print(f"Proveedor actual: {base}")
     effective_key = updates.get("LLM_API_KEY", existing_key)
 
     # 2. Ojos
