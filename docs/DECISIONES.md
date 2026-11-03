@@ -173,3 +173,5 @@ ojos con placa de banco:
   fue el adaptativo por RMS. Se eliminan la dependencia, `VAD_AGGRESSIVENESS` y
   el aviso de `doctor` que exigía el paquete; `VoiceLoop` usa el detector
   adaptativo por defecto.
+
+- **03/11/2026:** turno huérfano tras corte: se persiste el usuario antes de responder y el asistente solo al terminar con texto. Al cargar, se descarta el último user sin asistente para evitar dos mensajes de usuario consecutivos al LLM.

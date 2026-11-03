@@ -40,7 +40,13 @@ def build_agent(
         if persona.path.name == "sirah.json":
             migrate_default_history(config.data_dir)
         history = HistoryFile(history_path(config.data_dir, persona.path))
-        for message in history.load(config.memory_messages):
+        loaded = history.load(config.memory_messages)
+        # Un turno huérfano (user sin asistente tras un corte) queda en disco,
+        # pero se descarta de la memoria para que el siguiente request al LLM no
+        # envíe dos mensajes de usuario consecutivos.
+        if loaded and loaded[-1].role == "user":
+            loaded = loaded[:-1]
+        for message in loaded:
             memory.add(message.role, message.content)
 
     agent = Agent(

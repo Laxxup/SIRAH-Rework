@@ -114,6 +114,12 @@ async def run_terminal(
             write("Comando no reconocido. Usa /salir para terminar.\n")
             continue
 
+        # Persistimos el turno del usuario antes de llamar al LLM: si el
+        # proceso muere a mitad de respuesta, el disco conserva la pregunta.
+        # El turno del asistente se añade solo tras una respuesta con texto.
+        if history is not None:
+            history.append("user", text)
+
         write(f"{persona.display_name}> ")
         collected_parts: list[str] = []
         pending = ""
@@ -156,7 +162,6 @@ async def run_terminal(
             write(_token_warning(config.llm_max_tokens))
         answer = collected.strip()
         if answer and history is not None:
-            history.append("user", text)
             history.append("assistant", answer)
 
     return 0

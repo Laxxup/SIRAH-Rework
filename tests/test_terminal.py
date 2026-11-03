@@ -220,6 +220,7 @@ def test_llm_error_keeps_the_chat_open(tmp_path: Path) -> None:
     history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
     assert [(item.role, item.content) for item in history.load(10)] == [
         ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
+        ("user", "hola"),
         ("user", "otra vez"),
         ("assistant", "Vale."),
     ]
@@ -267,6 +268,7 @@ def test_empty_response_shows_a_warning_and_is_not_stored(tmp_path: Path) -> Non
     history = HistoryFile(history_path(tmp_path / "data" / "sirah", persona.path))
     assert [(item.role, item.content) for item in history.load(10)] == [
         ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
+        ("user", "hola"),
     ]
 
 
@@ -372,6 +374,7 @@ def test_default_history_is_migrated_on_start(tmp_path: Path) -> None:
     history = HistoryFile(history_dir / history_name)
     assert [(item.role, item.content) for item in history.load(10)] == [
         ("user", "antes"),
+        ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
         ("user", "hola"),
         ("assistant", "uno"),
     ]
