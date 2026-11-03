@@ -25,11 +25,13 @@ from sirah.adapters.tts import player_arguments
 from sirah.config import (
     PROJECT_ROOT,
     Config,
+    ConfigError,
     PersonaSettings,
     active_card_path,
     identity_for,
     is_ollama_url,
     mask_secret,
+    read_env_file,
     sha256_file,
 )
 from sirah.core.health import Health
@@ -133,6 +135,32 @@ _check_dotenv_permissions = _check_env_permissions
 _check_env_file = _check_env_permissions
 _check_env_mode = _check_env_permissions
 _check_dotenv = _check_env_permissions
+
+
+def _check_llm_base_url(config: Config) -> Health:
+    try:
+        values = read_env_file(config.env_file)
+    except (ConfigError, OSError):
+        values = {}
+    raw_base = str(values.get("LLM_BASE_URL", "")).strip()
+    if not raw_base and str(values.get("LLM_API_KEY", "")).strip():
+        return Health(
+            "LLM_BASE_URL",
+            "warn",
+            "Falta LLM_BASE_URL; se usa Groq por compatibilidad.",
+            "Ejecuta `sirah setup` para escribir la URL explícita.",
+        )
+    return Health(
+        "LLM_BASE_URL",
+        "ok",
+        "LLM_BASE_URL explícita o sin fallback legacy.",
+    )
+
+
+_check_llm_url = _check_llm_base_url
+_check_llm_provider = _check_llm_base_url
+_check_base_url = _check_llm_base_url
+_check_legacy_groq = _check_llm_base_url
 
 
 def _check_llm(config: Config, offline: bool) -> Health:
@@ -924,6 +952,7 @@ def run_checks(config: Config, offline: bool = False) -> list[Health]:
         _check_config(config),
         _check_env_permissions(config),
         _check_llm(config, offline),
+        _check_llm_base_url(config),
         _check_persona(config),
         _check_calibration(),
         _check_data_dir(config),
