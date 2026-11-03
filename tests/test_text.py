@@ -107,3 +107,23 @@ def test_drops_terminal_control_characters() -> None:
     assert _clean("\x1b[2Jhola\x07") == "[2Jhola"
     assert _clean("a\rb") == "ab"
     assert _clean("a\tb\nc") == "a\tb\nc"
+
+
+def test_streaming_is_invariant_to_chunk_boundaries() -> None:
+    texts = (
+        "Hola *mundo*, **esto** y `código`.",
+        "- uno\n* dos\n+ tres\n• cuatro\n# Título\n",
+        "Hola.  \nMundo.\t\n",
+        "**negrita** y *cursiva*",
+        "Hola   ",
+        "Hola.\n\n\nMundo.",
+        "3 * 4 y 2*3",
+        "A*B",
+    )
+    for text in texts:
+        cleaner = PlainTextCleaner()
+        expected = cleaner.feed(text) + cleaner.finish()
+        for cut in range(len(text) + 1):
+            streamed = PlainTextCleaner()
+            got = streamed.feed(text[:cut]) + streamed.feed(text[cut:]) + streamed.finish()
+            assert got == expected, (text, cut, got, expected)
