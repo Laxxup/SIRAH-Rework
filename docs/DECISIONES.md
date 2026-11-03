@@ -92,7 +92,9 @@ Estas decisiones no cambian el stack ni el alcance; son la forma de construirlo.
 | T48 | Si falta clave de Groq, micrófono, `arecord`/`aplay` o Piper, `sirah voice` lo explica con `Solución:` y cae al chat por texto | Salir con error o arrancar sin voz en silencio | La conversación por texto sigue disponible |
 | T49 | `LLM_TIMEOUT_S=20`; `LLM_TOP_P` opcional (vacío = no se envía); `top_k` no se envía | Mantener 60 s y añadir `top_k` | 20 s evita esperas muertas en voz; Ollama `/v1` admite `top_p` pero no `top_k`, y el endpoint nativo exigiría otro cliente |
 | T50 | `stream_options.include_usage` y log de `prompt_tokens`, `cached_tokens` y `completion_tokens`; nunca el texto | Estimar el gasto por longitud de la respuesta | Mide el gasto real sin guardar contenido |
-| T51 | Un 402, o un 403 con saldo/cuota en el cuerpo, se distingue de un 403 por clave; el cuerpo se lee en memoria y no se registra | Tratar todo 403 como clave o registrar el cuerpo | El usuario necesita saber si recargar o cambiar la clave; el cuerpo puede repetir datos de entrada |
+| T51 | Un 402, o un 403/429 con saldo/cuota en el cuerpo, se distingue de un 403 por clave; el cuerpo se lee en memoria y no se registra | Tratar todo 403 como clave o registrar el cuerpo | El usuario necesita saber si recargar o cambiar la clave; el cuerpo puede repetir datos de entrada |
+| T52 | Un `.env` sin `LLM_BASE_URL` se interpreta como Groq si tiene `LLM_API_KEY` (configuración antigua) y como Ollama si no la tiene; `sirah setup` escribe siempre la URL | Asumir Ollama siempre | Evita enviar una clave de Groq a Ollama y no rompe instalaciones anteriores; una instalación nueva sin URL ni clave es Ollama |
+| T53 | `stream_options.include_usage` se envía por defecto; ante un 400 se reintenta una vez sin él | Enviarlo siempre o nunca | Conserva las métricas en Ollama/Groq y tolera endpoints que rechazan campos desconocidos |
 
 ## 3. Descartadas
 

@@ -213,6 +213,46 @@ def test_switching_to_ollama_asks_for_a_new_key_and_clears_thinking(
     assert captured["LLM_API_KEY"] == "clave-nueva"
 
 
+def test_switching_provider_without_a_new_key_keeps_the_old_one(
+    monkeypatch, tmp_path: Path
+) -> None:
+    env_file, captured = _patch_setup(
+        monkeypatch,
+        tmp_path,
+        env_content=(
+            "LLM_BASE_URL=https://api.groq.com/openai/v1\n"
+            "LLM_MODEL=openai/gpt-oss-20b\n"
+            "LLM_API_KEY=clave-vieja\n"
+            "LLM_REASONING_EFFORT=low\n"
+        ),
+        ask_overrides={"cambiar de proveedor": True},
+        choose_result="Ollama Cloud (gemma4:31b)",
+        secret="",
+    )
+    assert run_setup(env_file) == 0
+    assert "LLM_BASE_URL" not in captured
+    assert "LLM_MODEL" not in captured
+    assert "LLM_API_KEY" not in captured
+
+
+def test_switching_from_ollama_to_groq_sets_low_reasoning(monkeypatch, tmp_path: Path) -> None:
+    env_file, captured = _patch_setup(
+        monkeypatch,
+        tmp_path,
+        env_content=(
+            "LLM_BASE_URL=https://ollama.com/v1\nLLM_MODEL=gemma4:31b\nLLM_API_KEY=clave-vieja\n"
+        ),
+        ask_overrides={"cambiar de proveedor": True},
+        choose_result="Groq (openai/gpt-oss-20b)",
+        secret="clave-groq",
+    )
+    assert run_setup(env_file) == 0
+    assert captured["LLM_BASE_URL"] == "https://api.groq.com/openai/v1"
+    assert captured["LLM_MODEL"] == "openai/gpt-oss-20b"
+    assert captured["LLM_REASONING_EFFORT"] == "low"
+    assert captured["LLM_API_KEY"] == "clave-groq"
+
+
 def test_setup_clears_eyes_address_when_no_ports_and_changing(monkeypatch, tmp_path: Path) -> None:
     env_file, captured = _patch_setup(
         monkeypatch,

@@ -77,6 +77,7 @@ def test_ollama_url_hostname() -> None:
 
 def test_top_p_is_optional_and_validated(tmp_path: Path) -> None:
     assert _load(tmp_path, LLM_TOP_P="0.95").llm_top_p == 0.95
+    assert _load(tmp_path, LLM_TOP_P="0").llm_top_p == 0.0
     with pytest.raises(ConfigError, match="LLM_TOP_P"):
         _load(tmp_path, LLM_TOP_P="1.5")
 
@@ -168,8 +169,25 @@ def test_active_card_uses_sirah_persona_when_set(tmp_path: Path) -> None:
 
 
 def test_reasoning_effort_can_be_empty(tmp_path: Path) -> None:
-    assert _load(tmp_path, LLM_REASONING_EFFORT="low").llm_reasoning_effort == "low"
-    assert _load(tmp_path, LLM_REASONING_EFFORT="").llm_reasoning_effort == ""
+    base = {"LLM_BASE_URL": "https://api.groq.com/openai/v1"}
+    assert _load(tmp_path, **base, LLM_REASONING_EFFORT="low").llm_reasoning_effort == "low"
+    assert _load(tmp_path, **base, LLM_REASONING_EFFORT="").llm_reasoning_effort == ""
+    with pytest.raises(ConfigError, match="LLM_REASONING_EFFORT"):
+        _load(tmp_path, **base, LLM_REASONING_EFFORT="max")
+
+
+def test_ollama_ignores_reasoning_effort(tmp_path: Path) -> None:
+    # Gemma 4 enciende el thinking con cualquier esfuerzo reconocido.
+    assert _load(tmp_path, LLM_REASONING_EFFORT="low").llm_reasoning_effort == ""
+    assert _load(tmp_path, LLM_REASONING_EFFORT="high").llm_reasoning_effort == ""
+
+
+def test_legacy_env_without_base_stays_on_groq(tmp_path: Path) -> None:
+    config = _load(tmp_path, LLM_API_KEY="groq-key", LLM_REASONING_EFFORT="low")
+    assert config.llm_base_url == "https://api.groq.com/openai/v1"
+    assert config.llm_model == "openai/gpt-oss-20b"
+    assert config.llm_reasoning_effort == "low"
+    assert config.stt_api_key == "groq-key"
 
 
 def test_user_name_is_optional_data(tmp_path: Path) -> None:
@@ -226,7 +244,6 @@ def test_update_env_file_replaces_the_last_duplicate(tmp_path: Path) -> None:
         ("LLM_TIMEOUT_S", "abc", "número"),
         ("LLM_MAX_TOKENS", "10", "entre 32 y 4096"),
         ("LLM_TEMPERATURE", "3", "entre 0 y 2"),
-        ("LLM_REASONING_EFFORT", "max", "low, medium, high o vacío"),
         ("MEMORY_PERSIST", "maybe", "true o false"),
         ("LOG_LEVEL", "LOUD", "DEBUG"),
     ],
@@ -269,8 +286,9 @@ def test_vad_prebuffer_must_cover_start_frames(tmp_path: Path) -> None:
 
 
 def test_stt_key_falls_back_to_groq_llm(tmp_path: Path) -> None:
-    default = _load(tmp_path, LLM_API_KEY="llm-key")
-    assert default.stt_api_key == ""
+    legacy = _load(tmp_path, LLM_API_KEY="llm-key")
+    assert legacy.llm_base_url == "https://api.groq.com/openai/v1"
+    assert legacy.stt_api_key == "llm-key"
 
     groq = _load(tmp_path, LLM_API_KEY="llm-key", LLM_BASE_URL="https://api.groq.com/openai/v1")
     assert groq.stt_api_key == "llm-key"

@@ -222,7 +222,7 @@ def _check_balance(config: Config) -> Health | None:
     if total <= 0:
         return Health(
             "Saldo",
-            "warn",
+            "fail",
             f"{detail} · no hay saldo",
             "Recarga saldo o cambia de proveedor; gemma4:31b no es gratuito "
             "(solo los modelos iniciales del plan gratuito).",

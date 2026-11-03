@@ -24,6 +24,7 @@ from sirah.doctor import (
     find_piper,
     print_report,
     resolve_player,
+    run_checks,
 )
 
 CALIBRATION = """\
@@ -83,6 +84,10 @@ def _config(tmp_path: Path, **env: str):
     )
 
 
+def _ollama_config(tmp_path: Path, **env: str):
+    return _config(tmp_path, LLM_BASE_URL="https://ollama.com/v1", **env)
+
+
 class _FakeHTTPResponse:
     def __init__(self, status_code: int, payload: object = None) -> None:
         self.status_code = status_code
@@ -127,7 +132,7 @@ def test_balance_reports_included_and_purchased(tmp_path: Path, monkeypatch) -> 
         200,
         {"included": {"balance_usd": 2.5}, "purchased": {"balance_usd": 1}},
     )
-    health = _check_balance(_config(tmp_path, LLM_API_KEY="k"))
+    health = _check_balance(_ollama_config(tmp_path, LLM_API_KEY="k"))
 
     assert health is not None
     assert health.status == "ok"
@@ -135,16 +140,16 @@ def test_balance_reports_included_and_purchased(tmp_path: Path, monkeypatch) -> 
     assert _FakeClient.last_url == "https://ollama.com/api/balance"
 
 
-def test_balance_zero_warns_that_the_model_is_not_free(tmp_path: Path, monkeypatch) -> None:
+def test_balance_zero_fails_that_the_model_is_not_free(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("sirah.doctor.httpx.Client", _FakeClient)
     _FakeClient.response = _FakeHTTPResponse(
         200,
         {"included": {"balance_usd": 0}, "purchased": {"balance_usd": 0}},
     )
-    health = _check_balance(_config(tmp_path, LLM_API_KEY="k"))
+    health = _check_balance(_ollama_config(tmp_path, LLM_API_KEY="k"))
 
     assert health is not None
-    assert health.status == "warn"
+    assert health.status == "fail"
     assert "no hay saldo" in health.detail
     assert "no es gratuito" in (health.fix or "")
 
@@ -152,14 +157,32 @@ def test_balance_zero_warns_that_the_model_is_not_free(tmp_path: Path, monkeypat
 def test_balance_rejected_key_is_a_failure(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("sirah.doctor.httpx.Client", _FakeClient)
     _FakeClient.response = _FakeHTTPResponse(403)
-    health = _check_balance(_config(tmp_path, LLM_API_KEY="k"))
+    health = _check_balance(_ollama_config(tmp_path, LLM_API_KEY="k"))
 
     assert health is not None
     assert health.status == "fail"
 
 
 def test_balance_needs_a_key(tmp_path: Path) -> None:
-    assert _check_balance(_config(tmp_path)) is None
+    assert _check_balance(_ollama_config(tmp_path)) is None
+
+
+def test_offline_checks_do_not_query_the_balance(tmp_path: Path, monkeypatch) -> None:
+    calls: list[str] = []
+
+    class _Boom:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            calls.append("client")
+
+    monkeypatch.setattr("sirah.doctor.httpx.Client", _Boom)
+    config = _config(
+        tmp_path,
+        LLM_API_KEY="k",
+        LLM_BASE_URL="https://ollama.com/v1",
+    )
+    checks = run_checks(config, offline=True)
+    assert calls == []
+    assert all(check.name != "Saldo" for check in checks)
 
 
 def test_calibration_ok(tmp_path: Path) -> None:

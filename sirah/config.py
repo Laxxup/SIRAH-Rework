@@ -445,7 +445,14 @@ def load_config(
                 "la ruta del dispositivo debe ser absoluta",
             )
 
-    base_url = _text(values, "LLM_BASE_URL", OLLAMA_BASE_URL).rstrip("/")
+    # Si falta la URL, una configuración con clave es antigua (Groq) y una
+    # instalación nueva (sin clave) usa Ollama. Así no se envía una clave
+    # desconocida a otro proveedor; `sirah setup` escribe la URL siempre.
+    raw_base = _optional_text(values, "LLM_BASE_URL", "")
+    if raw_base:
+        base_url = raw_base.rstrip("/")
+    else:
+        base_url = GROQ_BASE_URL if _text(values, "LLM_API_KEY") else OLLAMA_BASE_URL
     parsed_url = urlparse(base_url)
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
         raise ConfigError("LLM_BASE_URL", base_url, "debe ser una URL http(s) válida")
@@ -464,14 +471,18 @@ def load_config(
     if not model:
         raise ConfigError("LLM_MODEL", model, "no puede estar vacío")
 
-    default_effort = "" if is_ollama_url(base_url) else "low"
-    reasoning_effort = _optional_text(values, "LLM_REASONING_EFFORT", default_effort).lower()
-    if reasoning_effort not in {"", "low", "medium", "high"}:
-        raise ConfigError(
-            "LLM_REASONING_EFFORT",
-            reasoning_effort,
-            "debe ser low, medium, high o vacío",
-        )
+    if is_ollama_url(base_url):
+        # Gemma 4 no acepta niveles: cualquier esfuerzo reconocido enciende el
+        # thinking. La variable se ignora para este proveedor.
+        reasoning_effort = ""
+    else:
+        reasoning_effort = _optional_text(values, "LLM_REASONING_EFFORT", "low").lower()
+        if reasoning_effort not in {"", "low", "medium", "high"}:
+            raise ConfigError(
+                "LLM_REASONING_EFFORT",
+                reasoning_effort,
+                "debe ser low, medium, high o vacío",
+            )
 
     top_p_raw = _optional_text(values, "LLM_TOP_P", "")
     top_p = _number(values, "LLM_TOP_P", 1.0, 0, 1) if top_p_raw else None

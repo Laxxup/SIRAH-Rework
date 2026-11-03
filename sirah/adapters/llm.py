@@ -13,6 +13,21 @@ from sirah.core.memory import Message
 
 logger = logging.getLogger("sirah.llm")
 
+# Hints de saldo/cuota en el cuerpo del error. Se evalúan en memoria y nunca se
+# registran; "insufficient permissions" no debe confundirse con saldo.
+_BALANCE_HINTS = (
+    "insufficient_quota",
+    "insufficient balance",
+    "insufficient credit",
+    "quota exceeded",
+    "credit balance",
+    "out of credits",
+    "billing",
+    "payment",
+    "subscription",
+    "upgrade",
+)
+
 
 def _cause(exc: BaseException) -> str:
     parts: list[str] = []
@@ -65,6 +80,7 @@ class LLMClient:
         self.top_p = top_p
         self.reasoning_effort = reasoning_effort
         self.retries = max(0, retries)
+        self.include_usage = True
         self.last_finish_reason: str | None = None
         self.last_usage: dict[str, object] = {}
 
@@ -107,10 +123,11 @@ class LLMClient:
                 {"role": message.role, "content": message.content} for message in messages
             ],
             "stream": True,
-            "stream_options": {"include_usage": True},
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
         }
+        if self.include_usage:
+            payload["stream_options"] = {"include_usage": True}
         if self.top_p is not None:
             payload["top_p"] = self.top_p
         if self.reasoning_effort:
@@ -134,6 +151,15 @@ class LLMClient:
                     headers=headers,
                 ) as response,
             ):
+                if response.status_code == 400 and self.include_usage:
+                    # Algunos endpoints compatibles rechazan stream_options.
+                    self.include_usage = False
+                    logger.info(
+                        "El proveedor rechazó stream_options; se repite sin métricas de uso"
+                    )
+                    async for chunk in self._stream_once(messages):
+                        yield chunk
+                    return
                 if response.status_code >= 400:
                     body = (await response.aread()).decode("utf-8", "replace")
                     logger.warning(
@@ -241,7 +267,7 @@ class LLMClient:
         try:
             event = json.loads(data)
         except json.JSONDecodeError:
-            logger.debug("Evento SSE inválido descartado: %s", data[:120])
+            logger.debug("Evento SSE inválido descartado (%d caracteres)", len(data))
             return None
         if not isinstance(event, dict):
             return None
@@ -251,6 +277,12 @@ class LLMClient:
             if isinstance(error, dict):
                 code = str(error.get("code") or error.get("type") or code)
             logger.warning("El LLM devolvió un error en el stream (%s)", code)
+            detail = json.dumps(error, ensure_ascii=False)
+            if LLMClient._has_balance_hint(detail):
+                raise LLMError(
+                    "El proveedor devolvió un error de saldo o cuota durante la respuesta. "
+                    "Revisa el saldo de tu cuenta; no se reintenta."
+                )
             raise LLMError(
                 "El LLM devolvió un error inesperado. Inténtalo de nuevo; si persiste, "
                 "revisa LLM_MODEL y LLM_BASE_URL (detalle en el log)."
@@ -314,17 +346,16 @@ class LLMClient:
         )
 
     @staticmethod
-    def _is_balance_error(status: int, body: str) -> bool:
-        """Distingue 403 por saldo de 403 por clave sin registrar el cuerpo."""
+    def _has_balance_hint(body: str) -> bool:
+        lowered = body.lower()
+        return any(hint in lowered for hint in _BALANCE_HINTS)
+
+    @classmethod
+    def _is_balance_error(cls, status: int, body: str) -> bool:
+        """Distingue saldo de clave; el cuerpo solo se inspecciona en memoria."""
         if status == 402:
             return True
-        if status != 403:
-            return False
-        lowered = body.lower()
-        return any(
-            hint in lowered
-            for hint in ("insufficient", "balance", "credit", "quota", "payment", "billing")
-        )
+        return status in {403, 429} and cls._has_balance_hint(body)
 
     @staticmethod
     def _retry_after(value: str | None) -> float | None:

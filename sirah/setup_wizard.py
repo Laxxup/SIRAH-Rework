@@ -262,6 +262,7 @@ def run_setup(env_file: Path | None = None) -> int:
         if _ask_yes_no("¿Quieres cambiar de proveedor?", False):
             base = ""
 
+    pending: dict[str, str] = {}
     if not base:
         labels = [
             f"Ollama Cloud ({OLLAMA_MODEL})",
@@ -269,29 +270,46 @@ def run_setup(env_file: Path | None = None) -> int:
         ]
         selected = _choose("Elige el proveedor del LLM", labels, 0) or labels[0]
         if selected == labels[1]:
-            updates["LLM_BASE_URL"] = GROQ_BASE_URL
-            updates["LLM_MODEL"] = GROQ_MODEL
-            updates["LLM_REASONING_EFFORT"] = "low"
+            pending = {
+                "LLM_BASE_URL": GROQ_BASE_URL,
+                "LLM_MODEL": GROQ_MODEL,
+                "LLM_REASONING_EFFORT": "low",
+            }
         else:
-            updates["LLM_BASE_URL"] = OLLAMA_BASE_URL
-            updates["LLM_MODEL"] = OLLAMA_MODEL
-            updates["LLM_REASONING_EFFORT"] = ""
-        base = updates["LLM_BASE_URL"]
+            pending = {
+                "LLM_BASE_URL": OLLAMA_BASE_URL,
+                "LLM_MODEL": OLLAMA_MODEL,
+                "LLM_REASONING_EFFORT": "",
+            }
+        base = pending["LLM_BASE_URL"]
         provider_changed = True
         print(f"Proveedor: {selected}.")
 
     existing_key = current.get("LLM_API_KEY", "").strip()
-    if existing_key and not provider_changed:
+    if provider_changed:
+        if existing_key:
+            print("La clave actual puede no servir para el proveedor nuevo.")
+        else:
+            print("Necesitas una clave de LLM (Ollama Cloud o Groq).")
+        new_key = _ask_secret("LLM_API_KEY")
+        if new_key or not existing_key:
+            updates.update(pending)
+            if new_key:
+                updates["LLM_API_KEY"] = new_key
+            else:
+                print("Aviso: sin clave no habrá conversación. Puedes ejecutar setup otra vez.")
+        else:
+            # Una clave vacía no puede validarse contra el proveedor nuevo.
+            print("Cambio cancelado: sin una clave nueva no se cambia de proveedor.")
+            base = current.get("LLM_BASE_URL", "").strip()
+    elif existing_key:
         print(f"LLM_API_KEY ya configurada: {mask_secret(existing_key)}")
         if _ask_yes_no("¿Quieres cambiarla?", False):
             new_key = _ask_secret("Nueva LLM_API_KEY")
             if new_key:
                 updates["LLM_API_KEY"] = new_key
     else:
-        if existing_key:
-            print("La clave actual puede no servir para el proveedor nuevo.")
-        else:
-            print("Necesitas una clave de LLM (Ollama Cloud o Groq).")
+        print("Necesitas una clave de LLM (Ollama Cloud o Groq).")
         new_key = _ask_secret("LLM_API_KEY")
         if new_key:
             updates["LLM_API_KEY"] = new_key

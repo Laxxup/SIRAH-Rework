@@ -153,6 +153,62 @@ def test_402_is_reported_as_a_balance_error() -> None:
             _collect(llm)
 
 
+def test_403_permissions_are_not_reported_as_balance() -> None:
+    body = '{"error":"insufficient permissions for this model"}'
+    with FakeLLM([FakeResponse(status=403, body=body)]) as server:
+        llm = LLMClient("clave", server.base_url, "modelo")
+        with pytest.raises(LLMError, match="LLM_API_KEY"):
+            _collect(llm)
+        assert len(server.requests) == 1
+
+
+def test_403_subscription_is_reported_as_balance() -> None:
+    body = '{"error":"this model requires a subscription"}'
+    with FakeLLM([FakeResponse(status=403, body=body)]) as server:
+        llm = LLMClient("clave", server.base_url, "modelo")
+        with pytest.raises(LLMError, match="saldo"):
+            _collect(llm)
+
+
+def test_429_with_quota_hint_is_not_retried() -> None:
+    body = '{"error":{"code":"insufficient_quota","message":"quota exceeded"}}'
+    with FakeLLM([FakeResponse(status=429, body=body)]) as server:
+        llm = LLMClient("clave", server.base_url, "modelo", retries=2)
+        with pytest.raises(LLMError, match="saldo"):
+            _collect(llm)
+        assert len(server.requests) == 1
+
+
+def test_stream_error_with_quota_hint_is_reported_as_balance() -> None:
+    body = 'data: {"error": {"code": "insufficient_quota"}}\n\n'
+    with FakeLLM([FakeResponse(body=body)]) as server:
+        llm = LLMClient("clave", server.base_url, "modelo", retries=0)
+        with pytest.raises(LLMError, match="saldo"):
+            _collect(llm)
+
+
+def test_400_retries_once_without_stream_options() -> None:
+    body = '{"error":"unsupported field: stream_options"}'
+    with FakeLLM([FakeResponse(status=400, body=body), FakeResponse(["Hola"])]) as server:
+        llm = LLMClient("clave", server.base_url, "modelo", retries=0)
+        assert _collect(llm) == ["Hola"]
+        assert len(server.requests) == 2
+        assert "stream_options" in server.requests[0]
+        assert "stream_options" not in server.requests[1]
+
+
+def test_usage_chunk_with_empty_choices_is_captured() -> None:
+    body = (
+        'data: {"choices":[{"delta":{"content":"Hola"},"finish_reason":"stop"}]}\n\n'
+        'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":2}}\n\n'
+        "data: [DONE]\n\n"
+    )
+    with FakeLLM([FakeResponse(body=body)]) as server:
+        llm = LLMClient("clave", server.base_url, "modelo")
+        assert _collect(llm) == ["Hola"]
+    assert llm.last_usage["prompt_tokens"] == 5
+
+
 def test_server_error_has_actionable_message() -> None:
     with FakeLLM([FakeResponse(status=503)]) as server:
         llm = LLMClient("clave", server.base_url, "modelo", retries=0)
@@ -175,6 +231,18 @@ def test_stream_error_event_is_reported(caplog) -> None:
         with pytest.raises(LLMError, match="error inesperado"):
             _collect(llm)
     assert "modelo no disponible" not in caplog.text
+
+
+def test_invalid_sse_event_does_not_log_its_content(caplog) -> None:
+    caplog.set_level("DEBUG", logger="sirah.llm")
+    body = (
+        "data: {esto no es json, contenido privado}\n\n"
+        'data: {"choices":[{"delta":{"content":"Hola"},"finish_reason":"stop"}]}\n\n'
+        "data: [DONE]\n\n"
+    )
+    with FakeLLM([FakeResponse(body=body)]) as server:
+        assert _collect(LLMClient("clave", server.base_url, "modelo")) == ["Hola"]
+    assert "contenido privado" not in caplog.text
 
 
 def test_missing_key_fails_before_network() -> None:

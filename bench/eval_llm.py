@@ -138,7 +138,7 @@ async def _measure(llm: LLMClient, messages: list[Message]) -> dict[str, object]
         "actions": [action.name for action in parser.actions],
         "finish_reason": llm.last_finish_reason,
         "usage": llm.last_usage,
-        "error": None,
+        "error": None if chars else "respuesta vacía",
     }
 
 
@@ -155,9 +155,7 @@ def _summary(rows: list[dict[str, object]]) -> dict[str, object]:
         "runs": len(rows),
         "failed": len(rows) - len(ok),
         "ttft_ms_median": _median([row["ttft_ms"] for row in ok if row["ttft_ms"] is not None]),
-        "total_ms_median": _median(
-            [row["total_ms"] for row in ok if row["total_ms"] is not None]
-        ),
+        "total_ms_median": _median([row["total_ms"] for row in ok if row["total_ms"] is not None]),
         "chars_median": _median([row["chars"] for row in ok]),
         "words_median": _median([row["words"] for row in ok]),
         "actions": dict(sorted(actions.items())),
@@ -206,9 +204,8 @@ async def _run_provider(
     }
 
 
-def _default_output() -> Path:
-    base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
-    directory = base.expanduser() / "sirah" / "llm-eval"
+def _default_output(config) -> Path:
+    directory = config.data_dir / "llm-eval"
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return directory / f"eval-{stamp}.json"
@@ -269,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No hay ninguna clave configurada; no se ejecutó nada.")
         return 2
 
-    output = args.output or _default_output()
+    output = args.output or _default_output(config)
     output = output.expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
