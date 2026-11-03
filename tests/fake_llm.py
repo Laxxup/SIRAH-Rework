@@ -11,6 +11,7 @@ from typing import Any
 @dataclass
 class FakeResponse:
     chunks: list[str] = field(default_factory=list)
+    reasoning: list[str] = field(default_factory=list)
     status: int = 200
     headers: dict[str, str] = field(default_factory=dict)
     body: str = ""
@@ -70,6 +71,13 @@ class FakeLLM:
                 self.send_header("Connection", "close")
                 self.end_headers()
                 try:
+                    for chunk in response.reasoning:
+                        event = json.dumps(
+                            {"choices": [{"delta": {"reasoning": chunk}}]},
+                            ensure_ascii=False,
+                        )
+                        self.wfile.write(f"data: {event}\n\n".encode())
+                        self.wfile.flush()
                     for chunk in response.chunks:
                         event = json.dumps(
                             {"choices": [{"delta": {"content": chunk}}]},

@@ -30,6 +30,7 @@ def build_agent(
             timeout_s=config.llm_timeout_s,
             max_tokens=config.llm_max_tokens,
             temperature=config.llm_temperature,
+            top_p=config.llm_top_p,
             reasoning_effort=config.llm_reasoning_effort,
         )
 

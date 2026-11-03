@@ -52,7 +52,8 @@ class LLMClient:
         timeout_s: float = 60.0,
         max_tokens: int = 1024,
         temperature: float = 0.6,
-        reasoning_effort: str = "low",
+        top_p: float | None = None,
+        reasoning_effort: str = "",
         retries: int = 2,
     ) -> None:
         self.api_key = api_key
@@ -61,6 +62,7 @@ class LLMClient:
         self.timeout_s = timeout_s
         self.max_tokens = max_tokens
         self.temperature = temperature
+        self.top_p = top_p
         self.reasoning_effort = reasoning_effort
         self.retries = max(0, retries)
         self.last_finish_reason: str | None = None
@@ -104,9 +106,12 @@ class LLMClient:
                 {"role": message.role, "content": message.content} for message in messages
             ],
             "stream": True,
+            "stream_options": {"include_usage": True},
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
         }
+        if self.top_p is not None:
+            payload["top_p"] = self.top_p
         if self.reasoning_effort:
             payload["reasoning_effort"] = self.reasoning_effort
         headers = {
@@ -130,13 +135,16 @@ class LLMClient:
                 if response.status_code >= 400:
                     body = (await response.aread()).decode("utf-8", "replace")
                     logger.warning(
-                        "El LLM rechazó la petición HTTP %s: %s",
+                        "El LLM rechazó la petición HTTP %s (%s)",
                         response.status_code,
-                        body.strip()[:300] or "sin cuerpo",
+                        "saldo/cuota"
+                        if self._is_balance_error(response.status_code, body)
+                        else "clave o petición",
                     )
                     raise self._status_error(
                         response.status_code,
                         response.headers.get("retry-after"),
+                        body,
                     )
 
                 saw_data = False
@@ -206,12 +214,21 @@ class LLMClient:
         self.last_finish_reason = finish_reason
         details = usage.get("completion_tokens_details")
         reasoning = details.get("reasoning_tokens") if isinstance(details, dict) else None
+        prompt_details = usage.get("prompt_tokens_details")
+        cached = (
+            prompt_details.get("cached_tokens")
+            if isinstance(prompt_details, dict)
+            else usage.get("cached_tokens")
+        )
         empty = "" if saw_content else " sin texto"
         logger.log(
             logging.INFO if saw_content else logging.WARNING,
-            "El LLM terminó%s (finish_reason=%s, completion_tokens=%s, reasoning_tokens=%s)",
+            "El LLM terminó%s (finish_reason=%s, prompt_tokens=%s, cached_tokens=%s, "
+            "completion_tokens=%s, reasoning_tokens=%s)",
             empty,
             finish_reason or "desconocido",
+            usage.get("prompt_tokens", "?"),
+            cached if cached is not None else "?",
             usage.get("completion_tokens", "?"),
             reasoning if reasoning is not None else "?",
         )
@@ -226,8 +243,11 @@ class LLMClient:
         if not isinstance(event, dict):
             return None
         if "error" in event:
-            detail = json.dumps(event["error"], ensure_ascii=False)[:300]
-            logger.warning("El LLM devolvió un error en el stream: %s", detail)
+            error = event["error"]
+            code = "sin código"
+            if isinstance(error, dict):
+                code = str(error.get("code") or error.get("type") or code)
+            logger.warning("El LLM devolvió un error en el stream (%s)", code)
             raise LLMError(
                 "El LLM devolvió un error inesperado. Inténtalo de nuevo; si persiste, "
                 "revisa LLM_MODEL y LLM_BASE_URL (detalle en el log)."
@@ -257,7 +277,13 @@ class LLMClient:
             return "".join(parts) or None
         return None
 
-    def _status_error(self, status: int, retry_after: str | None) -> Exception:
+    def _status_error(self, status: int, retry_after: str | None, body: str = "") -> Exception:
+        if self._is_balance_error(status, body):
+            return LLMError(
+                f"El proveedor rechazó la petición por saldo o cuota (HTTP {status}). "
+                "Revisa el saldo de tu cuenta; si usas Ollama Cloud, en "
+                "https://ollama.com/settings/keys. No se reintenta."
+            )
         if status in {401, 403}:
             return LLMError(
                 f"El proveedor rechazó LLM_API_KEY (HTTP {status}). "
@@ -269,8 +295,9 @@ class LLMClient:
             )
         if status == 429:
             return _RetryableLLM(
-                "El proveedor del LLM está limitando las peticiones (HTTP 429). "
-                "Espera unos segundos o revisa la cuota de tu plan.",
+                "El proveedor del LLM está limitando las peticiones o la cola está llena "
+                "(HTTP 429). Espera unos segundos o revisa la cuota y las peticiones "
+                "simultáneas de tu plan.",
                 self._retry_after(retry_after),
             )
         if status >= 500:
@@ -281,6 +308,19 @@ class LLMClient:
             )
         return LLMError(
             f"El LLM rechazó la petición (HTTP {status}). Revisa LLM_MODEL y LLM_BASE_URL."
+        )
+
+    @staticmethod
+    def _is_balance_error(status: int, body: str) -> bool:
+        """Distingue 403 por saldo de 403 por clave sin registrar el cuerpo."""
+        if status == 402:
+            return True
+        if status != 403:
+            return False
+        lowered = body.lower()
+        return any(
+            hint in lowered
+            for hint in ("insufficient", "balance", "credit", "quota", "payment", "billing")
         )
 
     @staticmethod
