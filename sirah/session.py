@@ -8,7 +8,7 @@ from sirah.adapters.history_file import HistoryFile, history_path, migrate_defau
 from sirah.adapters.llm import LLMClient
 from sirah.config import Config
 from sirah.core.agent import Agent
-from sirah.core.memory import Memory
+from sirah.core.memory import Memory, merge_consecutive_users
 from sirah.core.persona import Persona
 
 # Se mantiene la firma con agent/config para no romper terminales y voz.
@@ -41,12 +41,10 @@ def build_agent(
             migrate_default_history(config.data_dir)
         history = HistoryFile(history_path(config.data_dir, persona.path))
         loaded = history.load(config.memory_messages)
-        # Un turno huérfano (user sin asistente tras un corte) queda en disco,
-        # pero se descarta de la memoria para que el siguiente request al LLM no
-        # envíe dos mensajes de usuario consecutivos.
-        if loaded and loaded[-1].role == "user":
-            loaded = loaded[:-1]
-        for message in loaded:
+        # Los turnos huérfanos quedan en disco tal cual. Al cargar, se fusionan
+        # los usuarios consecutivos para que el proveedor no reciba dos
+        # mensajes `user` seguidos.
+        for message in merge_consecutive_users(loaded):
             memory.add(message.role, message.content)
 
     agent = Agent(
@@ -80,6 +78,16 @@ def record_opening_greeting(agent: object, history: object, greeting: str) -> No
     append = getattr(history, "append", None)
     if append is not None:
         append("assistant", greeting)
+
+
+def record_user_turn(history, text: str) -> None:
+    if history is not None:
+        history.append("user", text)
+
+
+def record_assistant_turn(history, text: str) -> None:
+    if history is not None:
+        history.append("assistant", text)
 
 
 def _stdout(text: str) -> None:

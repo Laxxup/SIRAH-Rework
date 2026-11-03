@@ -716,3 +716,17 @@ def test_voice_calibrates_before_the_greeting(tmp_path: Path, monkeypatch) -> No
     asyncio.run(run_voice(config, _persona(), write=[].append))
 
     assert calls[:3] == ["calibrate", "greeting", "speak"]
+
+
+def test_turn_persists_user_when_respond_fails_after_stt() -> None:
+    mic = FakeMic([[TONE] * 20 + [SILENCE]])
+    stt = FakeSTT(["hola"])
+    tts = FakeTTS(mic)
+    output: list[str] = []
+    history = FakeHistory()
+    loop = _loop(mic, stt, tts, FailingAgent([]), output, history)
+
+    asyncio.run(loop._turn())
+
+    assert history.items == [("user", "hola")]
+    assert tts.phrases == []

@@ -17,7 +17,9 @@ from sirah.session import (
     _token_warning,
     build_agent,
     opening_greeting,
+    record_assistant_turn,
     record_opening_greeting,
+    record_user_turn,
 )
 
 logger = logging.getLogger("sirah.terminal")
@@ -117,8 +119,7 @@ async def run_terminal(
         # Persistimos el turno del usuario antes de llamar al LLM: si el
         # proceso muere a mitad de respuesta, el disco conserva la pregunta.
         # El turno del asistente se añade solo tras una respuesta con texto.
-        if history is not None:
-            history.append("user", text)
+        record_user_turn(history, text)
 
         write(f"{persona.display_name}> ")
         collected_parts: list[str] = []
@@ -161,7 +162,7 @@ async def run_terminal(
         if truncated:
             write(_token_warning(config.llm_max_tokens))
         answer = collected.strip()
-        if answer and history is not None:
-            history.append("assistant", answer)
+        if answer:
+            record_assistant_turn(history, answer)
 
     return 0

@@ -31,7 +31,9 @@ from sirah.session import (
     _token_warning,
     build_agent,
     opening_greeting,
+    record_assistant_turn,
     record_opening_greeting,
+    record_user_turn,
 )
 from sirah.terminal import run_terminal
 
@@ -143,8 +145,7 @@ class VoiceLoop:
 
         # El turno del usuario se persiste justo después de transcribirlo; el
         # del asistente solo al terminar _respond con texto.
-        if self.history is not None:
-            self.history.append("user", text)
+        record_user_turn(self.history, text)
 
         self.supervisor.set(State.SPEAKING)
         await self._respond(text)
@@ -230,8 +231,8 @@ class VoiceLoop:
                 )
 
         answer = "".join(pieces).strip()
-        if not failed and answer and self.history is not None:
-            self.history.append("assistant", answer)
+        if not failed and answer:
+            record_assistant_turn(self.history, answer)
 
     async def close(self) -> None:
         await self.mic.close()

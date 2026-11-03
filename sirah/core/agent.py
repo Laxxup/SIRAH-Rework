@@ -6,7 +6,7 @@ import logging
 from collections.abc import AsyncIterator, Callable
 
 from sirah.core.actions import Action, ActionParser
-from sirah.core.memory import Memory, Message, limit_text
+from sirah.core.memory import Memory, Message, limit_text, merge_consecutive_users
 from sirah.core.persona import Persona
 from sirah.core.text import PlainTextCleaner
 
@@ -155,6 +155,13 @@ class Agent:
         if not user_text.strip():
             return
 
+        # Si la memoria termina en un `user` huérfano, se fusiona con el turno
+        # actual para no enviar dos mensajes `user` consecutivos al proveedor.
+        recent = merge_consecutive_users(self.memory.messages)
+        if recent and recent[-1].role == "user":
+            recent[-1] = Message("user", recent[-1].content + "\n" + user_text.strip())
+        else:
+            recent = recent + [Message("user", user_text.strip())]
         messages: list[Message] = [
             Message(
                 "system",
@@ -165,8 +172,7 @@ class Agent:
                     language=self.language,
                 ),
             ),
-            *self.memory.messages,
-            Message("user", user_text.strip()),
+            *recent,
         ]
         answer = ""
         for attempt in range(2):

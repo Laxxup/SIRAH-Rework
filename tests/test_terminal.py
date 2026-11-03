@@ -374,7 +374,6 @@ def test_default_history_is_migrated_on_start(tmp_path: Path) -> None:
     history = HistoryFile(history_dir / history_name)
     assert [(item.role, item.content) for item in history.load(10)] == [
         ("user", "antes"),
-        ("assistant", "Hola, soy SIRAH. ¿De qué quieres hablar?"),
         ("user", "hola"),
         ("assistant", "uno"),
     ]
