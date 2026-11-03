@@ -21,7 +21,8 @@ de cierre están en `docs/PENDIENTES.md`.
 ## Requisitos y hardware
 
 - Python 3.12, `uv` y Linux.
-- Una clave de LLM compatible con OpenAI; el modelo se configura en `.env`.
+- Una clave de LLM compatible con OpenAI. Por defecto, Ollama Cloud con
+  `gemma4:31b`; `sirah setup` también ofrece Groq con `gpt-oss-20b`.
 - Voz opcional: `uv sync --all-extras`, Piper y `arecord` (ALSA) para captura.
 - Reproducción: `aplay` (ALSA) o `paplay`/`pw-play` (PulseAudio/PipeWire).
 - Ojos opcionales: usuario en el grupo `dialout`.
@@ -63,12 +64,16 @@ permite arrancar con otra tarjeta de personaje.
 
 ## Configuración
 
-- `.env`: `LLM_API_KEY` es obligatoria. `GROQ_API_KEY` es opcional si el LLM ya
-  es Groq. `EYES_ADDRESS` y `SIRAH_DATA_DIR` son opcionales.
+- `.env`: `LLM_API_KEY` es obligatoria. El proveedor y el modelo por defecto son
+  Ollama Cloud y `gemma4:31b`; `sirah setup` permite elegir Groq. `GROQ_API_KEY`
+  es obligatoria para la voz salvo que el LLM ya sea Groq. `EYES_ADDRESS` y
+  `SIRAH_DATA_DIR` son opcionales.
 - `config/sirah.toml`: tarjeta activa, idioma e identidad (`card` o `robot`).
   La tarjeta no puede cambiar la identidad. `SIRAH_PERSONA` y `--persona` solo
   eligen tarjeta.
 - Historial y logs: `$XDG_DATA_HOME/sirah`. Hay un historial por tarjeta.
+- `doctor` consulta el saldo de Ollama Cloud cuando el proveedor es Ollama; no
+  hay plan gratuito verificado para `gemma4:31b`.
 
 ## Validación
 
@@ -91,6 +96,8 @@ de hardware es manual. No hay CI configurado.
 - En voz faltan VAD con ruido real, corte de red, cierre limpio y arranque sin
   micrófono.
 - La visión no captura cámara ni mueve los ojos.
+- El texto del chat se envía al proveedor del LLM (Ollama Cloud por defecto) y
+  el audio a Groq para transcribir; no hay modo local por defecto.
 - El modelo exacto del ESP32 y el consumo real de la fuente de 5 V no están
   confirmados.
 

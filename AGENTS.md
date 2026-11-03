@@ -50,10 +50,13 @@ hardware y sin `BENCH_PORT`.
 - Piper se usa como librería (`piper.PiperVoice`) con `.onnx` y `.onnx.json`.
   `aplay` puede colgar en PipeWire: doctor/voice prueban 200 ms y caen a
   `paplay`/`pw-play`; `AUDIO_PLAYER_COMMAND` fija el reproductor.
-- LLM por defecto: Groq `openai/gpt-oss-20b`. Su razonamiento consume
-  `LLM_MAX_TOKENS`; por defecto 1024 con `LLM_REASONING_EFFORT=low`. Una
-  respuesta vacía se reintenta una vez y un corte por `length` muestra
-  `[AVISO]`.
+- LLM por defecto: Ollama Cloud `gemma4:31b` (`LLM_BASE_URL=https://ollama.com/v1`).
+  `sirah setup` permite elegir Groq `openai/gpt-oss-20b`. `LLM_REASONING_EFFORT`
+  va vacío con Ollama: Gemma 4 activa el thinking con `low`. Con Groq se usa
+  `low`. `LLM_MAX_TOKENS` es 1024. Una respuesta vacía se reintenta una vez y un
+  corte por `length` muestra `[AVISO]`.
+- El texto del chat sale al proveedor del LLM y el audio del STT a Groq; no hay
+  modo local por defecto. No se registra contenido de mensajes ni claves.
 - Datos en `$XDG_DATA_HOME/sirah` (`SIRAH_DATA_DIR`): historial JSONL por
   tarjeta y logs rotativos (1 MB × 3). Los logs van solo al archivo; también
   con `--debug`.

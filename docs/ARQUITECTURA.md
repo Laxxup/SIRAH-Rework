@@ -304,12 +304,13 @@ Las claves se muestran siempre enmascaradas.
 | Variable | Defecto | Validación |
 |---|---|---|
 | `LLM_API_KEY` | — | Obligatoria para conversar; no se valida el formato |
-| `LLM_BASE_URL` | `https://api.groq.com/openai/v1` | URL `http(s)` |
-| `LLM_MODEL` | `openai/gpt-oss-20b` | Texto no vacío |
-| `LLM_TIMEOUT_S` | `60` | 5–300 |
+| `LLM_BASE_URL` | `https://ollama.com/v1` | URL `http(s)`; `setup` ofrece Ollama Cloud o Groq |
+| `LLM_MODEL` | `gemma4:31b` | Texto no vacío; con Groq, `openai/gpt-oss-20b` |
+| `LLM_TIMEOUT_S` | `20` | 5–300 |
 | `LLM_MAX_TOKENS` | `1024` | 32–4096 |
 | `LLM_TEMPERATURE` | `0.6` | 0–2 |
-| `LLM_REASONING_EFFORT` | `low` | `low`, `medium`, `high` o vacío (no se envía) |
+| `LLM_TOP_P` | vacío | 0–1; vacío = no se envía. `/v1` de Ollama no admite `top_k` |
+| `LLM_REASONING_EFFORT` | vacío con Ollama; `low` con Groq | `low`, `medium`, `high` o vacío (no se envía). Con Gemma 4, `low` activa el thinking |
 | `USER_NAME` | vacío | Texto libre; vacío = no se añade al prompt |
 | `SIRAH_PERSONA` | vacío | Temporal: ruta a una tarjeta; tiene prioridad sobre `[persona] active` |
 | `SIRAH_DATA_DIR` | `$XDG_DATA_HOME/sirah` | Ruta escribible; se crea con `0700` |
@@ -516,7 +517,7 @@ Pruebas manuales por hito (el equipo las ejecuta y las confirma):
 | Los servos reinician la placa por falta de corriente | Aviso de fuente externa y masa común; nunca alimentar desde USB |
 | OpenCV 5 rompe YuNet 2023mar | Fijar `opencv-python-headless<5`; test de carga del modelo |
 | Piper cambia su CLI | Aislado en `tts.py`; smoke test y mensaje claro si falta |
-| Límites gratuitos de Groq (429) | Reintento con espera, mensaje claro y proveedor configurable |
+| Cuota o saldo agotado (429, 402, 403) | Reintento con espera, mensaje que distingue clave de saldo y `doctor` consulta `/api/balance` |
 | Sin aarch64 para medir | Rendimiento en Pi marcado "sin verificar"; dependencias con wheel aarch64 |
 | El micrófono captura al altavoz | Half-duplex y cooldown de 200 ms tras hablar |
 | El panel expone secretos o la red | Loopback por defecto, token obligatorio fuera de él, CSRF, claves enmascaradas |

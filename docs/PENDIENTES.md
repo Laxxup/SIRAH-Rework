@@ -60,6 +60,56 @@ dar por buenas. No marcar como resuelto sin evidencia.
   4. Apaga el ruido y habla otra vez: debe entenderte sin reiniciar.
   No marcar como validado hasta que el equipo lo confirme.
 
+## LLM (Ollama Cloud, 03/11/2026)
+
+- [ ] **Nombre del modelo sin verificar.** `gemma4:31b` es el nombre previsto,
+  pero no hay clave de Ollama en `.env`; falta `GET https://ollama.com/api/tags`.
+  No dar el nombre por bueno hasta esa llamada.
+- [ ] **Cuota gratuita sin verificar.** El plan gratuito cubre "modelos
+  iniciales"; no está confirmado que `gemma4:31b` entre. El presupuesto debe
+  asumir 0 % de caché.
+- [ ] **Caché de prefijo sin verificar.** `/api/usage` reporta
+  `cached_input_tokens`, pero el TTL y las condiciones no están documentados.
+- [ ] **Precio por tamaño y fuera de punta sin verificar.** La tabla de precios
+  es de familia `gemma4`; no hay fila de 31B ni de off-peak confirmada.
+- [ ] **`stream_options.include_usage` con Ollama Cloud.** `/v1` lo soporta
+  según la documentación, pero no se probó con clave real.
+- [ ] **Marcas `<|channel>`.** `/v1` separa el razonamiento en
+  `delta.reasoning`, que el cliente no emite ni guarda. No hay evidencia de
+  fugas en `content`; no se añadió un filtro con estado.
+- [ ] **Fallback automático a Groq.** Pendiente de decisión; hoy solo se cambia
+  a mano con `sirah setup`.
+- [ ] **Límite de 3 peticiones simultáneas.** No hay worker de fondo ni carril
+  de visión. Cuando existan: semáforo de 2 para fondo/visión y un hueco
+  reservado para el turno principal que no espera; cerrar el stream con
+  `aclose` y liberar en `finally`. Riesgo: el turno principal se queda sin
+  hueco de reintento ante un 429.
+- [ ] **Banco de 20 frases.** `bench/eval_llm.py` está listo pero no se ejecutó:
+  necesita claves y gasta saldo. Medir TTFT, tiempo total, tokens, acciones
+  válidas y brevedad antes de cambiar `LLM_TEMPERATURE` (0,6 actual; la ficha
+  del modelo recomienda 1,0 / 0,95 / 64).
+
+## Visión (hito 3, bloqueado)
+
+- [ ] **AGENTS.md prohíbe código de visión** ("No crear código ni experimentar
+  con ojos o visión"). No se escribió nada; hace falta que el dueño actualice
+  la regla y lo anote en `docs/DECISIONES.md`.
+- [ ] **Montaje de la cámara sin decidir** (fija o sobre el mecanismo). Sin eso
+  no se puede cerrar MOG2 ni el control de lazo.
+- [ ] **Contrato Supervisor/Eyes sin definir.** `Supervisor` llama
+  `on_state`/`on_actions`/`close`, pero la interfaz documentada es
+  `look`/`blink`/`tired`/`center`/`health`/`close`.
+- [ ] **`make check` no puede probar YuNet** sin OpenCV en dev y una imagen de
+  cara con licencia. Añadir OpenCV a dev sigue pendiente de aprobación.
+- [ ] **`models/` es intocable.** Palma (3,9 MB), mano (4,1 MB) y SFace
+  (38,7 MB) exigirían aprobación del dueño, licencia y checksum.
+- [ ] **Saccades incompatibles con 15 Hz y paso 0,06.** A 15 Hz, 0,06/tick es
+  0,9 u/s; un movimiento de 0,3 u tarda ~0,47 s, no 80–250 ms. Decidir
+  "seguimiento suave" o cambiar ritmo/paso.
+- [ ] **Gestos, quién habla (DOA), VLM, expresiones e identidad:** no se
+  implementan. Quedan documentados en el informe de auditoría; identidad y
+  expresiones están descartadas por el dueño.
+
 ## Entorno de desarrollo
 
 - [x] `uv` instalado en `~/.local/bin` (0.13.5). Si el comando no aparece,
@@ -163,7 +213,9 @@ dar por buenas. No marcar como resuelto sin evidencia.
 El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 
 - [x] Plan y estructura (`docs/ARQUITECTURA.md`).
-- [x] Proveedor LLM por defecto y modelo (Groq `openai/gpt-oss-20b`).
+- [x] Proveedor LLM por defecto y modelo. A13 (03/11/2026): Ollama Cloud
+  `gemma4:31b`; la decisión anterior de Groq `openai/gpt-oss-20b` queda como
+  histórico y sigue disponible en `setup`.
 - [x] Voz Piper concreta (`es_MX-claude-high` propuesta).
 - [x] VAD adaptativo por RMS y sin palabra de activación.
 - [x] Memoria local primero; Zep fuera de v1.
@@ -193,8 +245,8 @@ El detalle y el estado de cada decisión viven en `docs/DECISIONES.md`.
 
 ### Pendiente de confirmar (fase 1)
 
-- [ ] `LLM_MAX_TOKENS=1024`, `LLM_REASONING_EFFORT=low` y `USER_NAME=Nombre` en
-  tu `.env`.
+- [ ] `LLM_MAX_TOKENS=1024`, `LLM_REASONING_EFFORT` vacío con Ollama o `low`
+  con Groq, y `USER_NAME=Nombre` en tu `.env`.
 - [ ] Una respuesta larga termina completa; si se corta, aparece
   `[AVISO] La respuesta se cortó por el límite de tokens`.
 - [ ] El log muestra una línea por turno con `finish_reason`,

@@ -32,6 +32,10 @@ la sección 9 de `AGENTS.md`.
 
 ## 1. LLM
 
+> Actualización 03/11/2026: la decisión vigente es A13 (`docs/DECISIONES.md`):
+> Ollama Cloud `gemma4:31b` por defecto y Groq como alternativa manual. Las
+> tablas siguientes son el estudio previo; no describen el estado actual.
+
 ### Opción actual
 
 Endpoint compatible con OpenAI (`/chat/completions`, Bearer, SSE). El

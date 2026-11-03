@@ -30,6 +30,11 @@ Estados:
 | A10 | Dependencias base | `httpx`, `pyserial`; extra `voice` en v1; `vision` y `web` pendientes mientras se implementan sus hitos; versiones fijas en `uv.lock` | Pocas, con rueda x86_64 y aarch64 | **Aprobada** (24/10/2026) |
 | A11 | Autotest y `NOD` | Autotest solo por comando explícito; no enviar `NOD` | El firmware no implementa `NOD`; mover servos sin avisar está prohibido | **Aprobada** (24/10/2026) |
 | A12 | La tarjeta manda, con piso fijo | La personalidad, el cuerpo, el afecto, el saludo y la longitud dependen de la tarjeta; el código solo impone formato, consentimiento, honestidad mínima y contexto | Ninguna regla de personalidad es global; cambiar de personaje es cambiar un archivo | **Aprobada** (27/10/2026) |
+| A13 | Proveedor LLM por defecto | Ollama Cloud `gemma4:31b` en `https://ollama.com/v1`; clave y modelo en `.env`; `sirah setup` permite elegir Groq | Decisión del dueño (03/11/2026); sustituye A2. Groq queda como alternativa manual: el fallback automático está pendiente | **Aprobada** (03/11/2026) |
+
+A13 sustituye a A2 solo en el proveedor por defecto; A2 queda como histórico. El
+texto del chat sale al proveedor del LLM y el audio a Groq: el proyecto ya no
+funciona sin red ni es "todo local".
 
 ## 2. Decisiones técnicas tomadas
 
@@ -85,13 +90,16 @@ Estas decisiones no cambian el stack ni el alcance; son la forma de construirlo.
 | T46 | El audio del turno se envuelve en WAV en memoria y se envía a Groq; nunca toca el disco ni el historial | Guardar WAV temporales o el audio en el historial | Privacidad y menos limpieza; al historial solo va el texto |
 | T47 | Piper y `aplay` se comunican por tuberías, sin archivos temporales; la frase siguiente se sintetiza mientras suena la actual | Sintetizar todo antes de hablar o escribir WAV en `/tmp` | Menor latencia y nada que borrar |
 | T48 | Si falta clave de Groq, micrófono, `arecord`/`aplay` o Piper, `sirah voice` lo explica con `Solución:` y cae al chat por texto | Salir con error o arrancar sin voz en silencio | La conversación por texto sigue disponible |
+| T49 | `LLM_TIMEOUT_S=20`; `LLM_TOP_P` opcional (vacío = no se envía); `top_k` no se envía | Mantener 60 s y añadir `top_k` | 20 s evita esperas muertas en voz; Ollama `/v1` admite `top_p` pero no `top_k`, y el endpoint nativo exigiría otro cliente |
+| T50 | `stream_options.include_usage` y log de `prompt_tokens`, `cached_tokens` y `completion_tokens`; nunca el texto | Estimar el gasto por longitud de la respuesta | Mide el gasto real sin guardar contenido |
+| T51 | Un 402, o un 403 con saldo/cuota en el cuerpo, se distingue de un 403 por clave; el cuerpo se lee en memoria y no se registra | Tratar todo 403 como clave o registrar el cuerpo | El usuario necesita saber si recargar o cambiar la clave; el cuerpo puede repetir datos de entrada |
 
 ## 3. Descartadas
 
 | Opción | Por qué no |
 |---|---|
 | Endpoint OpenCode Zen/Kimi del `.env` heredado como default | No se verificó que sea gratuito ni su vigencia |
-| Ollama como opción por defecto | Sin medición en la Pi; se queda como respaldo configurable |
+| Ollama como opción por defecto | Sin medición en la Pi; se queda como respaldo configurable. A13 usa Ollama Cloud, no el servidor local |
 | `openWakeWord` en v1 | Modelos preentrenados solo en inglés y con licencia no comercial |
 | Silero VAD como dependencia base | Añade `onnxruntime`/PyTorch; WebRTC basta para empezar |
 | faster-whisper o whisper.cpp en v1 | Groq cubre la voz sin descargar modelos; quedan como adaptadores futuros |
