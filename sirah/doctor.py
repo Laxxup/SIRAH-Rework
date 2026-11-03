@@ -17,6 +17,7 @@ import tempfile
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 
@@ -27,6 +28,7 @@ from sirah.config import (
     PersonaSettings,
     active_card_path,
     identity_for,
+    is_ollama_url,
     mask_secret,
     sha256_file,
 )
@@ -158,6 +160,74 @@ def _check_llm(config: Config, offline: bool) -> Health:
         f"respuesta HTTP {response.status_code} al comprobar el endpoint",
         "Revisa el estado del proveedor y LLM_BASE_URL.",
     )
+
+
+def _check_balance(config: Config) -> Health | None:
+    """Saldo real de Ollama Cloud; None si el proveedor no es Ollama."""
+    if not is_ollama_url(config.llm_base_url):
+        return None
+    if not config.llm_api_key:
+        return None
+    parsed = urlparse(config.llm_base_url)
+    url = f"{parsed.scheme}://{parsed.netloc}/api/balance"
+    try:
+        with httpx.Client(timeout=5.0, follow_redirects=False, trust_env=False) as client:
+            response = client.get(url, headers={"Authorization": f"Bearer {config.llm_api_key}"})
+    except httpx.HTTPError as exc:
+        return Health(
+            "Saldo",
+            "warn",
+            f"no se pudo comprobar: {exc.__class__.__name__}",
+            "Revisa la red; el saldo se puede consultar en https://ollama.com/settings/keys.",
+        )
+    if response.status_code in {401, 403}:
+        return Health(
+            "Saldo",
+            "fail",
+            f"la clave fue rechazada (HTTP {response.status_code})",
+            "Revisa LLM_API_KEY; el saldo se consulta en https://ollama.com/settings/keys.",
+        )
+    if response.status_code != 200:
+        return Health(
+            "Saldo",
+            "warn",
+            f"respuesta HTTP {response.status_code} al consultar /api/balance",
+            "El chat puede funcionar; comprueba el saldo en https://ollama.com/settings/keys.",
+        )
+    try:
+        data = response.json()
+    except ValueError:
+        return Health(
+            "Saldo",
+            "warn",
+            "respuesta ilegible de /api/balance",
+            "Comprueba el saldo en https://ollama.com/settings/keys.",
+        )
+    included = data.get("included") if isinstance(data, dict) else None
+    purchased = data.get("purchased") if isinstance(data, dict) else None
+    included_usd = included.get("balance_usd") if isinstance(included, dict) else None
+    purchased_usd = purchased.get("balance_usd") if isinstance(purchased, dict) else None
+    if not isinstance(included_usd, (int, float)) and not isinstance(purchased_usd, (int, float)):
+        return Health(
+            "Saldo",
+            "warn",
+            "la respuesta no trae saldo incluido ni comprado",
+            "Comprueba el saldo en https://ollama.com/settings/keys.",
+        )
+    total = float(included_usd or 0) + float(purchased_usd or 0)
+    detail = (
+        f"incluido ${float(included_usd or 0):.2f} · "
+        f"comprado ${float(purchased_usd or 0):.2f} · total ${total:.2f}"
+    )
+    if total <= 0:
+        return Health(
+            "Saldo",
+            "warn",
+            f"{detail} · no hay saldo",
+            "Recarga saldo o cambia de proveedor; gemma4:31b no es gratuito "
+            "(solo los modelos iniciales del plan gratuito).",
+        )
+    return Health("Saldo", "ok", detail)
 
 
 def _check_persona(config: Config, settings: PersonaSettings | None = None) -> Health:
@@ -824,7 +894,7 @@ def _check_voice(config: Config) -> Health:
 
 def run_checks(config: Config, offline: bool = False) -> list[Health]:
     """Comprueba todas las capas sin abrir el puerto serial."""
-    return [
+    checks = [
         _check_python(),
         _check_config(config),
         _check_llm(config, offline),
@@ -839,6 +909,11 @@ def run_checks(config: Config, offline: bool = False) -> list[Health]:
         _check_piper(config),
         _check_voice(config),
     ]
+    if not offline:
+        balance = _check_balance(config)
+        if balance is not None:
+            checks.insert(3, balance)
+    return checks
 
 
 def print_report(checks: list[Health], env_file: Path) -> int:

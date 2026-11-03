@@ -10,6 +10,7 @@ from sirah.config import load_config, load_persona_settings
 from sirah.core.health import Health
 from sirah.doctor import (
     _check_audio,
+    _check_balance,
     _check_calibration,
     _check_config,
     _check_data_dir,
@@ -80,6 +81,85 @@ def _config(tmp_path: Path, **env: str):
         env_file=tmp_path / "missing.env",
         environ={"XDG_DATA_HOME": str(tmp_path / "xdg"), **env},
     )
+
+
+class _FakeHTTPResponse:
+    def __init__(self, status_code: int, payload: object = None) -> None:
+        self.status_code = status_code
+        self.payload = payload
+
+    def json(self):
+        if self.payload is None:
+            raise ValueError("sin JSON")
+        return self.payload
+
+
+class _FakeClient:
+    response = _FakeHTTPResponse(200, {})
+    last_url = ""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args: object) -> bool:
+        return False
+
+    def get(self, url: str, headers: dict[str, str] | None = None):
+        type(self).last_url = url
+        return type(self).response
+
+
+def test_balance_is_skipped_for_other_providers(tmp_path: Path) -> None:
+    config = _config(
+        tmp_path,
+        LLM_API_KEY="k",
+        LLM_BASE_URL="https://api.groq.com/openai/v1",
+    )
+    assert _check_balance(config) is None
+
+
+def test_balance_reports_included_and_purchased(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("sirah.doctor.httpx.Client", _FakeClient)
+    _FakeClient.response = _FakeHTTPResponse(
+        200,
+        {"included": {"balance_usd": 2.5}, "purchased": {"balance_usd": 1}},
+    )
+    health = _check_balance(_config(tmp_path, LLM_API_KEY="k"))
+
+    assert health is not None
+    assert health.status == "ok"
+    assert "$3.50" in health.detail
+    assert _FakeClient.last_url == "https://ollama.com/api/balance"
+
+
+def test_balance_zero_warns_that_the_model_is_not_free(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("sirah.doctor.httpx.Client", _FakeClient)
+    _FakeClient.response = _FakeHTTPResponse(
+        200,
+        {"included": {"balance_usd": 0}, "purchased": {"balance_usd": 0}},
+    )
+    health = _check_balance(_config(tmp_path, LLM_API_KEY="k"))
+
+    assert health is not None
+    assert health.status == "warn"
+    assert "no hay saldo" in health.detail
+    assert "no es gratuito" in (health.fix or "")
+
+
+def test_balance_rejected_key_is_a_failure(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("sirah.doctor.httpx.Client", _FakeClient)
+    _FakeClient.response = _FakeHTTPResponse(403)
+    health = _check_balance(_config(tmp_path, LLM_API_KEY="k"))
+
+    assert health is not None
+    assert health.status == "fail"
+
+
+def test_balance_needs_a_key(tmp_path: Path) -> None:
+    assert _check_balance(_config(tmp_path)) is None
 
 
 def test_calibration_ok(tmp_path: Path) -> None:
