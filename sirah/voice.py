@@ -141,6 +141,11 @@ class VoiceLoop:
             return
         self.write(f"tú> {text}\n")
 
+        # El turno del usuario se persiste justo después de transcribirlo; el
+        # del asistente solo al terminar _respond con texto.
+        if self.history is not None:
+            self.history.append("user", text)
+
         self.supervisor.set(State.SPEAKING)
         await self._respond(text)
         self.supervisor.set(State.IDLE)
@@ -226,7 +231,6 @@ class VoiceLoop:
 
         answer = "".join(pieces).strip()
         if not failed and answer and self.history is not None:
-            self.history.append("user", text)
             self.history.append("assistant", answer)
 
     async def close(self) -> None:
