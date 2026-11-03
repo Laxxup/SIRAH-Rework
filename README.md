@@ -1,87 +1,44 @@
 # SIRAH
 
-S.I.R.A.H. es un robot conversacional por texto y voz, para sistemas
-embebidos Linux, sin contenedores ni GPU.
+Robot conversacional por texto y voz para Linux. Combina un LLM, tarjetas de
+personaje, memoria local y voz. Proyecto de la Comunidad Robótica, taller de
+alumnos del TEC de Madero; dirigido a compañeros, evaluadores y futuros
+integrantes. El repositorio incluye el firmware de los ojos animatrónicos, pero
+la aplicación todavía no envía órdenes al hardware.
 
-**Estado actual:** la parte de texto está implementada; la voz fue validada
-manualmente en una máquina; los ojos/servos y la visión siguen pendientes de
-validación física.
+## Estado
 
-**Validación actual:** `make check` pasa en desarrollo local, sin hardware ni
-red; `make guard` protege rutas sensibles. Ejecuta `make check` para la cifra
-de pruebas actual. CI no está configurado en el repositorio.
-
-## Qué es SIRAH
-
-Combina un LLM, tarjetas de personaje, memoria e historial local, texto y voz.
-Las etiquetas de ojos se analizan y se descartan hoy, porque esa parte no está
-validada. SIRAH no afirma acciones físicas que no ocurrieron.
-
-## Estado del proyecto
-
-| Hito | Estado | Detalle |
+| Área | Estado | Evidencia |
 |---|---|---|
-| Hito 0 | Implementado | `setup` y `doctor` |
-| Hito 1 | Implementado | Texto, tarjetas y memoria |
-| Hito 2 | HIL pendiente | ESP32, PCA9685 y servos |
-| Hito 3 | Pendiente | Cámara y detección |
-| Hito 4 | Parcial | Captura, STT, TTS y VAD |
+| Texto | Funciona | Chat, tarjetas, memoria e historial JSONL; pruebas offline |
+| Voz | Parcial | STT, TTS y VAD implementados; conversación validada en una máquina |
+| Ojos | Parcial | Firmware y protocolo escritos; extremos calibrados; HIL pendiente |
+| Visión | Pendiente | Modelo YuNet incluido; captura y seguimiento sin implementar |
 
-## Tabla de contenido
+Lo que no aparece como validado aquí no está validado. Los detalles y criterios
+de cierre están en `docs/PENDIENTES.md`.
 
-- [Demo y media](#demo-y-media)
-- [Arquitectura](#arquitectura)
-- [Hardware](#hardware)
-- [Software y requisitos](#software-y-requisitos)
-- [Instalación y uso](#instalacion-y-uso)
-- [Estructura de repositorio](#estructura-de-repositorio)
-- [Validación](#validacion)
-- [Roadmap](#roadmap)
-- [Créditos y equipo](#creditos-y-equipo)
-- [Licencias](#licencias)
-- [Contacto](#contacto)
+## Requisitos y hardware
 
-## Demo y media
-
-Pendiente: screenshots, GIFs y fotos del montaje todavía no están disponibles.
-No incluir activamente imágenes hasta tener una fuente propia y revisada.
-
-## Arquitectura
-
-```mermaid
-flowchart LR
-  entrada["Texto o voz"] --> agente["Agente SIRAH"]
-  agente --> llm["Modelo de lenguaje"]
-  llm --> respuesta["Respuesta de texto o voz"]
-  agente --> memoria["Historial local (JSONL)"]
-  llm -.-> ojos["Ojos: comando de movimiento, pendiente Hito 2"]
-```
-
-Lee `docs/ARQUITECTURA.md` para los flujos por texto y voz, y
-`docs/PROTOCOL.md` para el protocolo del firmware.
-
-## Hardware
+- Python 3.12, `uv` y Linux.
+- Una clave de LLM compatible con OpenAI; el modelo se configura en `.env`.
+- Voz opcional: `uv sync --all-extras`, Piper y `arecord` (ALSA) para captura.
+- Reproducción: `aplay` (ALSA) o `paplay`/`pw-play` (PulseAudio/PipeWire).
+- Ojos opcionales: usuario en el grupo `dialout`.
 
 | Componente | Cantidad | Estado |
 |---|---:|---|
-| ESP32, modelo por confirmar con la placa real | 1 | Firmware listo; hardware sin HIL completo |
-| PCA9685, dirección `0x40` | 1 | Extremos calibrados; integración pendiente |
-| Servo SG90 | 6 | Calibración candidata; `TIRED` pendiente |
-| Fuente externa 5 V | 1 | Amperaje real pendiente de medición |
-| Cámara USB / V4L2 | 1 (opt-in) | Software listo; visión pendiente |
-| Micrófono y altavoz | 1 de cada (opt-in) | Voz validada en una máquina |
+| ESP32 | 1 | Modelo por confirmar; firmware y protocolo escritos, HIL pendiente |
+| PCA9685 (dirección `0x40`) | 1 | Canales definidos; integración con servos pendiente |
+| Servo SG90 | 6 | Extremos validados; `TIRED` y alimentación pendientes |
+| Fuente externa de 5 V | 1 | Amperaje real sin medir |
+| Cámara USB | 1, opt-in | Modelo YuNet incluido; captura y seguimiento sin implementar |
+| Micrófono y altavoz | 1 + 1, opt-in | Voz validada en una máquina; faltan pruebas de ruido, red y cierre |
 
-Mecánica de ojos: EyeMech ε3.2 es una inspiración; SIRAH no incluye archivos
-STL. Licencia del EyeMech: pendiente de confirmar.
-
-## Software y requisitos
-
-- Python 3.12, `uv`, Linux x86_64 o aarch64.
-- `httpx` y `pyserial`.
-- Voz opcional: `piper-tts`, ALSA.
-- Una clave LLM; para STT se reutiliza Groq si el LLM ya es Groq.
-- Hardware opcional con grupo `dialout`, cámara y audio.
-- Sin contenedores ni GPU.
+La lista de componentes, el cableado y la alimentación están en
+`docs/HARDWARE.md`. El firmware y su compilación están en
+[`firmware/README.md`](firmware/README.md); el flasheo físico aún no está
+documentado.
 
 ## Instalación y uso
 
@@ -92,66 +49,73 @@ uv run sirah doctor
 uv run sirah
 ```
 
+Para solo texto, `uv sync` es suficiente. `setup` configura `.env` y
+`config/sirah.toml`, y puede descargar la voz. `doctor` no abre el puerto
+serial.
+
 ```bash
 uv run sirah voice
 uv run sirah voice --check
-uv run sirah doctor --offline
 ```
 
-`sirah setup` crea `.env`, copia `config/sirah.toml.example` y ofrece voz.
-`sirah doctor` no abre el serial.
+`voice --check` graba al menos 3 segundos y muestra RMS y VAD. `--persona RUTA`
+permite arrancar con otra tarjeta de personaje.
 
-## Estructura de repositorio
+## Configuración
 
-```text
-SIRAH/
-├── sirah/          # núcleo y adaptadores
-├── config/         # calibración y tarjetas
-├── firmware/       # ESP32 y PCA9685
-├── docs/           # arquitectura, protocolo, hardware
-├── tests/          # sin hardware ni red
-└── .env.example
-```
+- `.env`: `LLM_API_KEY` es obligatoria. `GROQ_API_KEY` es opcional si el LLM ya
+  es Groq. `EYES_ADDRESS` y `SIRAH_DATA_DIR` son opcionales.
+- `config/sirah.toml`: tarjeta activa, idioma e identidad (`card` o `robot`).
+  La tarjeta no puede cambiar la identidad. `SIRAH_PERSONA` y `--persona` solo
+  eligen tarjeta.
+- Historial y logs: `$XDG_DATA_HOME/sirah`. Hay un historial por tarjeta.
 
 ## Validación
 
-- `make check`: pruebas offline, sin hardware ni red.
-- `make guard`: rutas protegidas intactas.
-- `voice --check`: graba 3 s y muestra RMS/VAD.
-- HIL: fotos, medición, reconexión y resistencia, todo pendiente.
-- Voz: pendientes VAD con ruido, corte de red y cierre limpio.
+```bash
+make check
+make guard
+uv run sirah doctor --offline
+uv run sirah voice --check
+```
 
-## Limitaciones conocidas
+`make check` ejecuta Ruff y pytest sin red ni hardware. `make guard` falla si se
+modifican `firmware/`, `config/eyes-calibration.toml` o `models/`. La validación
+de hardware es manual. No hay CI configurado.
 
-SIRAH ya cubre software de texto, parcialmente voz y firmware base para ojos, pero no
-valida hardware de ojos con carga real, visión con cámara, VAD con ruido real ni
-arranque cuando falta micrófono. Los detalles y criterios de cierre están en
-`docs/PENDIENTES.md`.
+## Limitaciones
 
-## Roadmap
+- La aplicación no controla los ojos por serial todavía.
+- `TIRED`, la alimentación sostenida, la reconexión y la integración PCA+servos
+  siguen pendientes de prueba HIL.
+- En voz faltan VAD con ruido real, corte de red, cierre limpio y arranque sin
+  micrófono.
+- La visión no captura cámara ni mueve los ojos.
+- El modelo exacto del ESP32 y el consumo real de la fuente de 5 V no están
+  confirmados.
 
-- Validar servos con carga real.
-- Probar `TIRED`, alimentación y reconexión.
-- Implementar visión con cámara.
-- Medir rendimiento en Raspberry Pi.
-- Agregar panel web autenticado en un hito posterior.
-- Mejorar pruebas HIL.
+## Contribuir
 
-## Créditos y equipo
+Lee `CONTRIBUTING.md`. Antes de enviar cambios, ejecuta `make check` y
+`make guard`. Los cambios en `firmware/`, `config/eyes-calibration.toml` y
+`models/` requieren aprobación del supervisor. Las reglas de `BENCH_PORT` y de
+hardware están en `CONTRIBUTING.md` y `AGENTS.md`.
 
-- Proyecto: S.I.R.A.H.
-- Autor y supervisor: @Laxxup
-- Contacto: por GitHub Issues o discusiones del repositorio.
-- Hardware pendiente: fotos, medición de fuente, reconexión y resistencia (HIL).
+## Créditos y contacto
+
+Comunidad Robótica, taller de alumnos del TEC de Madero. Supervisor: @Laxxup.
+Integrantes: alumnos del taller de Comunidad Robótica. Contacto: GitHub Issues.
+
+Mecánica: EyeMech ε3.2 de Will Cogley. No se incluyen sus archivos STL.
 
 ## Licencias
 
-- Código nuevo: MIT (`LICENSE`).
-- Firmware y calibración: revisa `firmware/README.md`.
-- Piper y modelos: licencias propias.
-- YuNet: MIT (`models/LICENSE.yunet`).
-- EyeMech: solo referencia; no incluye archivos STL.
-
-## Contacto
-
-- Mantenedor: @Laxxup
+- Código del repositorio, incluido el sketch: MIT. Ver [`LICENSE`](LICENSE).
+- Mecánica EyeMech ε3.2:
+  [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), de
+  [Will Cogley](https://github.com/will-cogley/EyeMech_Epsilon). No se
+  redistribuyen los STL. Para uso comercial hay que contactar al autor.
+- Modelo YuNet: MIT. Ver [`models/LICENSE.yunet`](models/LICENSE.yunet).
+- Firmware: las librerías Adafruit PWM Servo Driver (BSD) y Adafruit BusIO
+  (MIT) tienen sus propias licencias. Ver `firmware/README.md`.
+- Piper, voces y modelos descargados: revisar sus licencias respectivas.
