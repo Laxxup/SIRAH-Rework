@@ -431,3 +431,14 @@ def test_sigint_exits_promptly(tmp_path: Path) -> None:
                 process.kill()
                 process.wait()
             os.close(master)
+
+
+def test_terminal_strips_control_characters_from_output(tmp_path: Path) -> None:
+    persona = _persona(name="SIRAH\x1b[2J\x9b", first_mes="Hola\x9d52;c...\x07")
+    output = _run(tmp_path, persona, ScriptedLLM([["uno"]]), ["hola", "/salir"])
+
+    assert "\x1b" not in output
+    assert "\x9b" not in output
+    assert "\x9d" not in output
+    assert "\x07" not in output
+    assert "SIRAH[2J" in output

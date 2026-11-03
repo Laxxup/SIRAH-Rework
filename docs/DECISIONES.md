@@ -175,3 +175,5 @@ ojos con placa de banco:
   adaptativo por defecto.
 
 - **03/11/2026:** turno huérfano tras corte: se persiste el usuario antes de responder y el asistente solo al terminar con texto. Al cargar, se descarta el último user sin asistente para evitar dos mensajes de usuario consecutivos al LLM.
+
+- **03/11/2026:** S6: `strip_controls` (C0/C1) es la única función de control en `core/text.py`; la transcripción STT se limpia una sola vez antes de imprimirla, enviarla al LLM y persistirla. El display name y el saludo no se limpian en persistencia, solo en salida.

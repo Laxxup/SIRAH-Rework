@@ -730,3 +730,25 @@ def test_turn_persists_user_when_respond_fails_after_stt() -> None:
 
     assert history.items == [("user", "hola")]
     assert tts.phrases == []
+
+
+def test_turn_strips_control_characters_from_transcription() -> None:
+    mic = FakeMic([[TONE] * 20 + [SILENCE]])
+    payload = "hola\x1b[2J\x9b\x9d52;c...\x07\r"
+    stt = FakeSTT([payload])
+    tts = FakeTTS(mic)
+    output: list[str] = []
+    history = FakeHistory()
+    agent = FakeAgent(["Vale."])
+    loop = _loop(mic, stt, tts, agent, output, history)
+
+    asyncio.run(loop._turn())
+
+    text = "".join(output)
+    assert "\x1b" not in text
+    assert "\x9b" not in text
+    assert "\x9d" not in text
+    assert "\x07" not in text
+    assert "\r" not in text
+    assert history.items == [("user", "hola[2J52;c..."), ("assistant", "Vale.")]
+    assert agent.texts == ["hola[2J52;c..."]

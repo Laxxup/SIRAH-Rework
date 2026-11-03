@@ -9,6 +9,11 @@ _BULLETS = "-+•"
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f\x80-\x9f]")
 
 
+def strip_controls(text: str) -> str:
+    """Quita controles C0 (salvo tab y salto) y C1 sin alterar el resto."""
+    return _CONTROL.sub("", text)
+
+
 class PlainTextCleaner:
     """Quita énfasis, viñetas, encabezados y espacios sobrantes mientras llega el texto."""
 
@@ -37,7 +42,7 @@ class PlainTextCleaner:
 
     def feed(self, text: str) -> str:
         out: list[str] = []
-        for char in _CONTROL.sub("", text):
+        for char in strip_controls(text):
             if char == "*":
                 self._flush_dots(out)
                 if not self._stars:

@@ -12,6 +12,7 @@ from sirah.adapters.llm import LLMClient, LLMError
 from sirah.config import Config
 from sirah.core.actions import Action
 from sirah.core.persona import Persona
+from sirah.core.text import strip_controls
 from sirah.session import (
     _stdout,
     _token_warning,
@@ -77,7 +78,8 @@ async def run_terminal(
         llm=llm,
     )
 
-    write(f"{persona.display_name} — chat por texto. Escribe /salir para terminar.\n")
+    display_name = strip_controls(persona.display_name)
+    write(f"{display_name} — chat por texto. Escribe /salir para terminar.\n")
     if identity == "robot":
         write("Modo robot estricto\n")
     for warning in persona.warnings:
@@ -93,7 +95,7 @@ async def run_terminal(
         greeting = ""
     else:
         greeting = await opening_greeting(persona)
-        write(f"{greeting}\n\n")
+        write(f"{strip_controls(greeting)}\n\n")
     record_opening_greeting(agent, history, greeting)
 
     while True:
@@ -121,7 +123,7 @@ async def run_terminal(
         # El turno del asistente se añade solo tras una respuesta con texto.
         record_user_turn(history, text)
 
-        write(f"{persona.display_name}> ")
+        write(f"{strip_controls(persona.display_name)}> ")
         collected_parts: list[str] = []
         pending = ""
         try:

@@ -15,6 +15,7 @@ from sirah.adapters.tts import PiperTTS
 from sirah.config import Config
 from sirah.core.agent import Agent
 from sirah.core.persona import Persona
+from sirah.core.text import strip_controls
 from sirah.core.voice import (
     FRAME_MS,
     AdaptiveSpeechDetector,
@@ -113,7 +114,8 @@ class VoiceLoop:
         if not text.strip():
             return
         self.supervisor.set(State.SPEAKING)
-        self.write(f"{self.persona.display_name}> {text}\n\n")
+        display_name = strip_controls(self.persona.display_name)
+        self.write(f"{display_name}> {text}\n\n")
         try:
             await self.tts.say(text)
         except VoiceError as exc:
@@ -136,7 +138,7 @@ class VoiceLoop:
             self.write(f"[AVISO] {exc}\n")
             self.supervisor.set(State.IDLE)
             return
-        text = text.strip()
+        text = strip_controls(text).strip()
         if sum(ch.isalnum() for ch in text) < 2:
             self.write("[AVISO] No te entendí; sigo escuchando.\n")
             self.supervisor.set(State.IDLE)
@@ -197,7 +199,8 @@ class VoiceLoop:
         buffer = PhraseBuffer()
         pieces: list[str] = []
         failed = False
-        self.write(f"{self.persona.display_name}> ")
+        display_name = strip_controls(self.persona.display_name)
+        self.write(f"{display_name}> ")
         try:
             async for chunk in self.agent.respond(text, on_actions=self.supervisor.actions):
                 pieces.append(chunk)

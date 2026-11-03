@@ -145,3 +145,11 @@ def test_c1_controls_are_dropped_across_chunks() -> None:
         char = chr(code)
         parts = PlainTextCleaner()
         assert parts.feed(char) + parts.feed("x") + parts.finish() == "x"
+
+
+def test_strip_controls_removes_c0_and_c1_and_keeps_safe_text() -> None:
+    from sirah.core.text import strip_controls
+
+    text = "a\x1b[2Jb\x9b\x9d52;c...\x07d\re\nf\tg á😀 *mundo*"
+    expected = "a[2Jb52;c...de\nf\tg á😀 *mundo*"
+    assert strip_controls(text) == expected
