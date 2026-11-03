@@ -333,9 +333,10 @@ validados el 01/11/2026; los puntos 3 y 4 siguen pendientes.
 - [ ] **Amperaje real de la fuente de 5 V con 6 servos en movimiento.**
   Falta: medición bajo carga. Importa porque la fuente puede quedar corta.
   Cierre: medir con multímetro y registrar valor.
-- [ ] **Licencia de la mecánica EyeMech (Will Cogley).**
-  Falta: confirmar términos del sitio original. Importa porque se atribuye
-  y no se redistribuyen STL. Cierre: enlace y licencia verificados.
+- [x] **Licencia de la mecánica EyeMech (Will Cogley).**
+  Confirmada el 02/11/2026: CC BY-NC-SA 4.0. Se atribuye y no se redistribuyen
+  los STL; el uso comercial requiere permiso del autor.
+  Cierre: `https://github.com/will-cogley/EyeMech_Epsilon/blob/main/License.txt`.
 - [ ] **Capturas y GIFs en `assets/`.**
   Falta: screenshots de terminal, `doctor` y `voice --check`. Importa: sirven
   para un README público. Cierre: imágenes propias en `assets/`.

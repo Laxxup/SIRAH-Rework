@@ -236,7 +236,7 @@ Reglas:
 | Alimentación sostenida con los 6 servos | Pendiente de medir. |
 | `NOD` | No implementado. |
 | Seguimiento visual con cámara real | Pendiente de validación. |
-| Audio con micrófono/altavoz reales | Pendiente de validación. |
+| Audio con micrófono/altavoz reales | Voz validada en una máquina (01/11/2026); faltan VAD con ruido real, corte de red y cierre limpio. |
 
 ## 11. Seguridad
 
