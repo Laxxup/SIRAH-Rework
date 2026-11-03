@@ -127,3 +127,21 @@ def test_streaming_is_invariant_to_chunk_boundaries() -> None:
             streamed = PlainTextCleaner()
             got = streamed.feed(text[:cut]) + streamed.feed(text[cut:]) + streamed.finish()
             assert got == expected, (text, cut, got, expected)
+
+
+def test_drops_c1_control_characters() -> None:
+    cleaner = PlainTextCleaner()
+    for code in range(0x80, 0xA0):
+        char = chr(code)
+        assert cleaner.feed(char + "x") == "x", (hex(code), repr(cleaner.feed(char + "x")))
+    # tabulador y salto de línea no son C1 y se conservan.
+    assert _clean("a\tb") == "a\tb"
+    assert _clean("\n") == "\n"
+    assert _clean("á é í ó ú 😀") == "á é í ó ú 😀"
+
+
+def test_c1_controls_are_dropped_across_chunks() -> None:
+    for code in range(0x80, 0xA0):
+        char = chr(code)
+        parts = PlainTextCleaner()
+        assert parts.feed(char) + parts.feed("x") + parts.finish() == "x"

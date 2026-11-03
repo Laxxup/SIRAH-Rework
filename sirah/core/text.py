@@ -6,7 +6,7 @@ import re
 
 _MARKDOWN = "`"
 _BULLETS = "-+•"
-_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f\x80-\x9f]")
 
 
 class PlainTextCleaner:
