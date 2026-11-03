@@ -94,3 +94,9 @@ def test_single_brace_followed_by_normal_text_is_shown() -> None:
     text, actions = _parse("Hola {", "mundo")
     assert text == "Hola {mundo"
     assert actions == ()
+
+
+def test_lone_open_brace_is_not_lost_after_flush() -> None:
+    parser = ActionParser()
+    text = parser.feed("texto final {") + parser.finish()
+    assert text == "texto final {"
