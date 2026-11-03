@@ -408,3 +408,17 @@ def test_audio_player_command_reports_whether_it_was_set(tmp_path: Path) -> None
     assert default.audio_player_command_set is False
     custom = _load(tmp_path, LLM_API_KEY="k", AUDIO_PLAYER_COMMAND="paplay")
     assert custom.audio_player_command_set is True
+
+
+def test_config_repr_does_not_leak_keys(tmp_path: Path) -> None:
+    secret = "synthetic-secret-do-not-log"
+    config = load_config(
+        env_file=tmp_path / "missing.env",
+        environ={
+            "XDG_DATA_HOME": str(tmp_path / "xdg"),
+            "LLM_API_KEY": secret,
+            "GROQ_API_KEY": secret,
+        },
+    )
+    assert secret not in repr(config)
+    assert secret not in str(config)

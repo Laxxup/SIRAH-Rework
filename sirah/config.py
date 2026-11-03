@@ -219,7 +219,7 @@ def active_card_path(config: Config, settings: PersonaSettings) -> Path:
 @dataclass(frozen=True, slots=True)
 class Config:
     env_file: Path
-    llm_api_key: str
+    llm_api_key: str = field(repr=False)
     llm_base_url: str
     llm_model: str
     llm_timeout_s: float
@@ -241,7 +241,7 @@ class Config:
     vision_enabled: bool
     vision_camera: str
     vision_model: Path
-    groq_api_key: str
+    groq_api_key: str = field(repr=False)
     stt_model: str
     stt_language: str
     stt_timeout_s: float

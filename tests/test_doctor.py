@@ -585,3 +585,12 @@ def test_player_autoselection_without_aplay_uses_paplay(tmp_path: Path, monkeypa
 
     assert choice.command == ("paplay",)
     assert "aplay no está disponible" in choice.message
+
+
+def test_doctor_does_not_print_configured_secret(tmp_path: Path, capsys) -> None:
+    secret = "synthetic-doctor-secret-literal"
+    config = _config(tmp_path, LLM_API_KEY=secret, LLM_BASE_URL="https://ollama.com/v1")
+    checks = run_checks(config, offline=True)
+    print_report(checks, config.env_file)
+    captured = capsys.readouterr()
+    assert secret not in captured.out
