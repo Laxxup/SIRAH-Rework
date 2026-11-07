@@ -86,7 +86,8 @@ uv run sirah voice --check
 
 `make check` ejecuta Ruff y pytest sin red ni hardware. `make guard` falla si se
 modifican `firmware/`, `config/eyes-calibration.toml` o `models/`. La validación
-de hardware es manual. No hay CI configurado.
+de hardware es manual. CI ejecuta `make check` en cada push y pull request
+(`.github/workflows/check.yml`).
 
 ## Limitaciones
 

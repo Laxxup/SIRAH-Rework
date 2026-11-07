@@ -71,8 +71,8 @@ SIRAH-Rework/
 └── docs/
 ```
 
-Los archivos de los hitos que aún no existen (`app.py`, `core/states.py`,
-`core/supervisor.py`, `adapters/camera.py`, `adapters/eyes.py`,
+**Futuro:** los archivos de los hitos que aún no existen (`app.py`,
+`core/states.py`, `core/supervisor.py`, `adapters/camera.py`, `adapters/eyes.py`,
 `adapters/serial_eyes.py`, `adapters/simulated.py`, `web/` y `bench/`) se
 crean cuando toque, no antes.
 
@@ -426,7 +426,7 @@ Reglas:
 
 | Comando | Hito | Qué hace |
 |---|---|---|
-| `sirah` | 1 | Chat por texto (flags `--vision`, `--debug`, `--persona`) |
+| `sirah` | 1 | Chat por texto (flags `--debug`, `--persona`) |
 | `sirah voice` | 4 | Manos libres con micrófono, Groq y Piper |
 | `sirah voice --check` | 4 | Graba 3 s y muestra RMS y VAD |
 | `sirah setup` | 0 | Crea `.env`, detecta serial/cámara/audio, ofrece descargar la voz |
