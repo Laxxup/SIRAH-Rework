@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fcntl
 import hashlib
+import logging
 import os
 import re
 import tomllib
@@ -22,6 +23,8 @@ OLLAMA_BASE_URL = "https://ollama.com/v1"
 OLLAMA_MODEL = "gemma4:31b"
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL = "openai/gpt-oss-20b"
+
+logger = logging.getLogger("sirah.config")
 
 _ENV_LINE = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 _INLINE_COMMENT = re.compile(r"\s+#")
@@ -375,6 +378,15 @@ def _integer(values: Mapping[str, str], key: str, default: int, low: int, high: 
     return value
 
 
+def _unused_integer(values: Mapping[str, str], key: str, default: int, low: int, high: int) -> int:
+    """Lee una variable de una función que aún no existe; un valor malo no bloquea."""
+    try:
+        return _integer(values, key, default, low, high)
+    except ConfigError as exc:
+        logger.warning("%s; se usa %s", exc, default)
+        return default
+
+
 def _number(values: Mapping[str, str], key: str, default: float, low: float, high: float) -> float:
     raw = _text(values, key)
     if not raw:
@@ -494,10 +506,9 @@ def load_config(
     panel_host = _text(values, "PANEL_HOST", "127.0.0.1")
     panel_token = _text(values, "PANEL_TOKEN")
     if panel_host not in _LOOPBACK and len(panel_token) < 16:
-        raise ConfigError(
-            "PANEL_TOKEN",
-            None,
-            "se necesitan al menos 16 caracteres si el panel no escucha en localhost",
+        logger.warning(
+            "PANEL_TOKEN: se necesitan al menos 16 caracteres si el panel no escucha "
+            "en localhost; el panel aún no existe y se ignora."
         )
 
     vad_prebuffer_ms = _integer(values, "VAD_PREBUFFER_MS", 300, 100, 1000)
@@ -548,9 +559,9 @@ def load_config(
         memory_messages=_integer(values, "MEMORY_MESSAGES", 12, 2, 50),
         memory_persist=_boolean(values, "MEMORY_PERSIST", True),
         eyes_address=eyes_address,
-        eyes_baud=_integer(values, "EYES_BAUD", 115200, 9600, 921600),
-        eyes_heartbeat_ms=_integer(values, "EYES_HEARTBEAT_MS", 1000, 500, 2500),
-        eyes_target_hz=_integer(values, "EYES_TARGET_HZ", 15, 5, 30),
+        eyes_baud=_unused_integer(values, "EYES_BAUD", 115200, 9600, 921600),
+        eyes_heartbeat_ms=_unused_integer(values, "EYES_HEARTBEAT_MS", 1000, 500, 2500),
+        eyes_target_hz=_unused_integer(values, "EYES_TARGET_HZ", 15, 5, 30),
         vision_enabled=_boolean(values, "VISION_ENABLED", False),
         vision_camera=_text(values, "VISION_CAMERA", "/dev/video0"),
         vision_model=_path(values, "VISION_MODEL", DEFAULT_VISION_MODEL),

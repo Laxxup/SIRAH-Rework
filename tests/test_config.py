@@ -270,12 +270,27 @@ def test_eyes_address_rejected(tmp_path: Path, address: str) -> None:
         _load(tmp_path, EYES_ADDRESS=address)
 
 
-def test_panel_requires_token_off_loopback(tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="PANEL_TOKEN") as info:
-        _load(tmp_path, PANEL_HOST="0.0.0.0", PANEL_TOKEN="tokenReal12345!")
-    assert "tokenReal12345!" not in str(info.value)
+def test_panel_without_token_off_loopback_only_warns(tmp_path: Path, caplog) -> None:
+    with caplog.at_level("WARNING", logger="sirah.config"):
+        config = _load(tmp_path, PANEL_HOST="0.0.0.0", PANEL_TOKEN="tokenReal12345!")
+    assert config.panel_token == "tokenReal12345!"
+    assert any("PANEL_TOKEN" in record.message for record in caplog.records)
+    assert "tokenReal12345!" not in caplog.text
+
     config = _load(tmp_path, PANEL_HOST="0.0.0.0", PANEL_TOKEN="x" * 16)
     assert config.panel_token == "x" * 16
+
+
+def test_unused_eyes_values_do_not_block_startup(tmp_path: Path) -> None:
+    config = _load(
+        tmp_path,
+        EYES_BAUD="no-es-numero",
+        EYES_HEARTBEAT_MS="1",
+        EYES_TARGET_HZ="999",
+    )
+    assert config.eyes_baud == 115200
+    assert config.eyes_heartbeat_ms == 1000
+    assert config.eyes_target_hz == 15
 
 
 def test_vad_prebuffer_must_cover_start_frames(tmp_path: Path) -> None:
