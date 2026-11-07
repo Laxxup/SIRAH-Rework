@@ -96,6 +96,11 @@ dar por buenas. No marcar como resuelto sin evidencia.
   Registrado en `docs/DECISIONES.md` (A14).
 - [ ] **Montaje de la cámara aplazado** (fija o sobre el mecanismo). No bloquea
   la lógica de seguimiento; la calibración se ajusta cuando exista hardware.
+- [ ] **Seguimiento con webcam real sin confirmar.** Pasos: `uv sync
+  --all-extras`; `uv run python bench/vision_check.py --camera /dev/video0`;
+  mover la cara y ver `mirada x=… y=…`; taparla y ver `mirada al centro` una
+  sola vez. El receptor nulo no mueve ojos reales.
+- [ ] **FPS en la Pi 4B sin medir.** No prometer 8 FPS en la Pi sin prueba real.
 - [ ] **Contrato Supervisor/Eyes sin definir.** `Supervisor` llama
   `on_state`/`on_actions`/`close`, pero la interfaz documentada es
   `look`/`blink`/`tired`/`center`/`health`/`close`. Unificar antes de integrar

@@ -244,6 +244,9 @@ class Config:
     vision_enabled: bool
     vision_camera: str
     vision_model: Path
+    vision_fps: int
+    vision_dead_zone: float
+    vision_smoothing: float
     groq_api_key: str = field(repr=False)
     stt_model: str
     stt_language: str
@@ -541,6 +544,16 @@ def load_config(
     if vad_end_multiple <= 1:
         raise ConfigError("VAD_END_MULTIPLE", vad_end_multiple, "debe ser mayor que 1")
 
+    vision_enabled = _boolean(values, "VISION_ENABLED", False)
+    if vision_enabled:
+        vision_fps = _integer(values, "VISION_FPS", 8, 5, 10)
+        vision_dead_zone = _number(values, "VISION_DEAD_ZONE", 0.15, 0, 0.5)
+        vision_smoothing = _number(values, "VISION_SMOOTHING", 0.35, 0.05, 1)
+    else:
+        vision_fps = 8
+        vision_dead_zone = 0.15
+        vision_smoothing = 0.35
+
     return Config(
         env_file=env_file,
         llm_api_key=_text(values, "LLM_API_KEY"),
@@ -562,9 +575,12 @@ def load_config(
         eyes_baud=_unused_integer(values, "EYES_BAUD", 115200, 9600, 921600),
         eyes_heartbeat_ms=_unused_integer(values, "EYES_HEARTBEAT_MS", 1000, 500, 2500),
         eyes_target_hz=_unused_integer(values, "EYES_TARGET_HZ", 15, 5, 30),
-        vision_enabled=_boolean(values, "VISION_ENABLED", False),
+        vision_enabled=vision_enabled,
         vision_camera=_text(values, "VISION_CAMERA", "/dev/video0"),
         vision_model=_path(values, "VISION_MODEL", DEFAULT_VISION_MODEL),
+        vision_fps=vision_fps,
+        vision_dead_zone=vision_dead_zone,
+        vision_smoothing=vision_smoothing,
         groq_api_key=_text(values, "GROQ_API_KEY"),
         stt_model=_text(values, "STT_MODEL", "whisper-large-v3-turbo"),
         stt_language=_text(values, "STT_LANGUAGE", "es"),

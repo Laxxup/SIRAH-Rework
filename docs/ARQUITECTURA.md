@@ -54,27 +54,30 @@ SIRAH-Rework/
 │   │   ├── persona.py          # carga tarjetas Character Card v2/v3
 │   │   ├── text.py             # limpieza de Markdown sobre el stream
 │   │   ├── health.py           # Health para doctor
+│   │   ├── vision.py           # cajas de cara → mirada (sin cv2)
 │   │   └── voice.py            # VAD, frases, estados y supervisor
 │   └── adapters/               # todo lo que toca el exterior
 │       ├── llm.py              # OpenAI-compatible con SSE
 │       ├── stt.py              # Groq Whisper (multipart)
 │       ├── tts.py              # Piper en proceso + aplay
 │       ├── mic.py              # arecord
+│       ├── camera.py           # cámara + YuNet en un hilo
 │       └── history_file.py     # persistencia JSONL del historial
 ├── config/
 │   ├── eyes-calibration.toml   # intocable, fuente única de calibración
 │   ├── sirah.toml.example      # plantilla de persona (local: sirah.toml)
 │   └── persona/                # tarjetas de personaje; solo sirah.json se versiona
 ├── tests/                      # pytest, sin hardware ni red
+├── bench/                      # scripts manuales; no entran en make check
 ├── firmware/                   # intocable
 ├── models/                     # YuNet intocable; voices/ se crea en setup
 └── docs/
 ```
 
 **Futuro:** los archivos de los hitos que aún no existen (`app.py`,
-`core/states.py`, `core/supervisor.py`, `adapters/camera.py`, `adapters/eyes.py`,
-`adapters/serial_eyes.py`, `adapters/simulated.py`, `web/` y `bench/`) se
-crean cuando toque, no antes.
+`core/states.py`, `core/supervisor.py`, `adapters/eyes.py`,
+`adapters/serial_eyes.py`, `adapters/simulated.py` y `web/`) se crean cuando
+toque, no antes.
 
 **Por qué esta estructura y no otra:**
 
@@ -196,10 +199,12 @@ cámara ─> YuNet ─> suavizado ───────> core/agent.py ──> a
 
 ### 4.3 Visión
 
-Un hilo captura a 640×480, detecta la cara más grande cada 2–3 frames y
-convierte su centro en `x, y ∈ [-1, 1]` con zona muerta y suavizado EMA. El
-resultado se publica en los ojos como `TARGET`, como máximo a 15 Hz y siempre
-con el último valor. Si no hay cara durante 1,5 s, envía `CENTER` una vez.
+Un hilo captura a 320×240 y detecta la cara más grande en cada cuadro, con
+`VISION_FPS` entre 5 y 10 (8 por defecto). El centro de la caja se convierte en
+`x, y ∈ [-1, 1]` con `VISION_DEAD_ZONE` y suavizado EMA (`VISION_SMOOTHING`).
+Si no hay cara durante `round(fps × 1,5)` cuadros, avisa `center()` una sola vez.
+El receptor nulo solo registra; el envío real como `TARGET` llega cuando exista
+`serial_eyes.py` y el contrato `Eyes` esté unificado (ver `docs/PENDIENTES.md`).
 
 La visión **solo** mueve la mirada; no toca párpados ni envía `BLINK`. La
 correspondencia izquierda/derecha se confirma en la prueba física del hito 3;
@@ -485,7 +490,9 @@ hardware.
 | 7 | Panel web local, sin build de frontend | El equipo configura y arranca desde el navegador; SIRAH funciona sin panel |
 | 8 | Versiones, `update` con reversión, servicio systemd, `DESPLIEGUE.md` | Actualizar, revertir y sobrevivir a un reinicio |
 
-Los hitos 0 y 1 están implementados. El hito 4 (voz) está parcialmente
+Los hitos 0 y 1 están implementados. El hito 3 (visión) tiene la lógica y el
+adaptador con receptor nulo, pero sigue sin integrarse en el chat y sin
+validar con webcam real ni en la Pi 4B. El hito 4 (voz) está parcialmente
 implementado: STT, TTS y VAD existen, pero la voz queda sin validar del todo
 hasta que se completen las pruebas de VAD con ruido, corte de red y cierre
 limpio. El hito 2 (ojos/servos) sigue sin HIL completo. **No se da nada por
@@ -498,7 +505,8 @@ Pruebas manuales por hito (el equipo las ejecuta y las confirma):
 - **1:** conversación de 10 turnos; respuesta en streaming; cambiar de persona.
 - **2:** prueba de hardware aún no implementada, ver `docs/PENDIENTES.md`; centro,
   parpadeo, cansancio y mirada; desenchufar y reenchufar el USB con SIRAH corriendo.
-- **3:** cara a la izquierda/derecha/arriba/abajo; sin cara vuelve al centro.
+- **3:** `uv sync --all-extras`; `uv run python bench/vision_check.py`; cara a la
+  izquierda/derecha/arriba/abajo; sin cara vuelve al centro.
 - **4:** `sirah voice --check`; tres turnos hablados; SIRAH no se oye a sí
   misma; cortar internet y comprobar el aviso; Ctrl-C y `pgrep -a
   'arecord|aplay|piper'` sin procesos; probarlo con otra tarjeta.

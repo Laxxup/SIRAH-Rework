@@ -32,6 +32,7 @@ Estados:
 | A12 | La tarjeta manda, con piso fijo | La personalidad, el cuerpo, el afecto, el saludo y la longitud dependen de la tarjeta; el código solo impone formato, consentimiento, honestidad mínima y contexto | Ninguna regla de personalidad es global; cambiar de personaje es cambiar un archivo | **Aprobada** (27/10/2026) |
 | A13 | Proveedor LLM por defecto | Ollama Cloud `gemma4:31b` en `https://ollama.com/v1`; clave y modelo en `.env`; `sirah setup` permite elegir Groq | Decisión del dueño (03/11/2026); sustituye A2. Groq queda como alternativa manual: el fallback automático está pendiente | **Aprobada** (03/11/2026) |
 | A14 | Visión autorizada (hito 3) | YuNet + seguimiento de la cara a `TARGET`; identidad, reconocimiento y emoción fuera; montaje de cámara aplazado | El dueño autorizó el 07/11/2026 cambiar la prohibición de `AGENTS.md`; la lógica de seguimiento no depende del montaje | **Aprobada** (07/11/2026) |
+| A15 | Visión activada: requisitos | Con `VISION_ENABLED=true`, `doctor` marca `fail` si falta la cámara, OpenCV o YuNet; con la visión apagada queda `off` o aviso | Si el usuario activa la visión, cámara, OpenCV y modelo son requisitos del runtime; un aviso se ignoraría y la visión no arrancaría | **Aprobada** (07/11/2026) |
 
 A13 sustituye a A2 solo en el proveedor por defecto; A2 queda como histórico. El
 texto del chat sale al proveedor del LLM y el audio a Groq: el proyecto ya no

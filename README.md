@@ -13,7 +13,7 @@ la aplicación todavía no envía órdenes al hardware.
 | Texto | Funciona | Chat, tarjetas, memoria e historial JSONL; pruebas offline |
 | Voz | Parcial | STT, TTS y VAD implementados; conversación validada en una máquina |
 | Ojos | Parcial | Firmware y protocolo escritos; extremos calibrados; HIL pendiente |
-| Visión | Pendiente | Modelo YuNet incluido; captura y seguimiento sin implementar |
+| Visión | Parcial | `VISION_ENABLED` opt-in; captura y seguimiento con receptor nulo; webcam real y Pi 4B sin validar |
 
 Lo que no aparece como validado aquí no está validado. Los detalles y criterios
 de cierre están en `docs/PENDIENTES.md`.
@@ -96,7 +96,9 @@ de hardware es manual. CI ejecuta `make check` en cada push y pull request
   siguen pendientes de prueba HIL.
 - En voz faltan VAD con ruido real, corte de red, cierre limpio y arranque sin
   micrófono.
-- La visión no captura cámara ni mueve los ojos.
+- La visión es opt-in (`VISION_ENABLED=false` por defecto): captura y sigue la
+  cara, pero el receptor es nulo y no mueve los ojos. Webcam real y Pi 4B sin
+  validar.
 - El texto del chat se envía al proveedor del LLM (Ollama Cloud por defecto) y
   el audio a Groq para transcribir; no hay modo local por defecto.
 - El modelo exacto del ESP32 y el consumo real de la fuente de 5 V no están

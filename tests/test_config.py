@@ -52,6 +52,9 @@ def test_defaults(tmp_path: Path) -> None:
     assert config.eyes_address == ""
     assert config.eyes_device is None
     assert config.vision_enabled is False
+    assert config.vision_fps == 8
+    assert config.vision_dead_zone == 0.15
+    assert config.vision_smoothing == 0.35
     assert config.memory_messages == 12
     assert config.data_dir == (tmp_path / "xdg" / "sirah").resolve()
     assert config.persona_path == DEFAULT_PERSONA
@@ -291,6 +294,44 @@ def test_unused_eyes_values_do_not_block_startup(tmp_path: Path) -> None:
     assert config.eyes_baud == 115200
     assert config.eyes_heartbeat_ms == 1000
     assert config.eyes_target_hz == 15
+
+
+def test_vision_values_are_only_validated_when_enabled(tmp_path: Path) -> None:
+    off = _load(
+        tmp_path,
+        VISION_ENABLED="false",
+        VISION_FPS="no",
+        VISION_DEAD_ZONE="no",
+        VISION_SMOOTHING="no",
+    )
+    assert off.vision_fps == 8
+    assert off.vision_dead_zone == 0.15
+    assert off.vision_smoothing == 0.35
+
+    on = _load(
+        tmp_path,
+        VISION_ENABLED="true",
+        VISION_FPS="6",
+        VISION_DEAD_ZONE="0.2",
+        VISION_SMOOTHING="0.5",
+    )
+    assert on.vision_fps == 6
+    assert on.vision_dead_zone == 0.2
+    assert on.vision_smoothing == 0.5
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("VISION_FPS", "4"),
+        ("VISION_FPS", "11"),
+        ("VISION_DEAD_ZONE", "0.6"),
+        ("VISION_SMOOTHING", "0"),
+    ],
+)
+def test_vision_values_are_validated_when_enabled(tmp_path: Path, key: str, value: str) -> None:
+    with pytest.raises(ConfigError, match=key):
+        _load(tmp_path, VISION_ENABLED="true", **{key: value})
 
 
 def test_vad_prebuffer_must_cover_start_frames(tmp_path: Path) -> None:

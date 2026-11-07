@@ -536,14 +536,21 @@ def _check_serial(config: Config) -> Health:
     return Health("Ojos", "ok", detail)
 
 
+def _camera_hint() -> str:
+    from sirah.setup_wizard import detect_cameras
+
+    cameras = detect_cameras()
+    return f" Cámaras detectadas: {', '.join(cameras)}." if cameras else ""
+
+
 def _check_camera(config: Config) -> Health:
     if not config.vision_enabled:
         return Health(
             "Visión",
             "off",
             "apagada: VISION_ENABLED=false",
-            "Actívala en .env (VISION_ENABLED=true) cuando tengas cámara; el "
-            "seguimiento llega en el hito 3.",
+            "Actívala en .env (VISION_ENABLED=true) cuando tengas cámara y hayas "
+            "instalado el extra de visión.",
         )
 
     device = Path(config.vision_camera)
@@ -552,7 +559,8 @@ def _check_camera(config: Config) -> Health:
             "Visión",
             "fail",
             f"no existe la cámara {device}",
-            "Conecta la cámara o cambia VISION_CAMERA; también puedes desactivar la visión.",
+            "Conecta la cámara o cambia VISION_CAMERA; también puedes desactivar "
+            f"la visión.{_camera_hint()}",
         )
     try:
         info = device.stat()
@@ -581,7 +589,7 @@ def _check_camera(config: Config) -> Health:
             "Visión",
             "fail",
             f"{device} accesible, pero falta OpenCV",
-            "La visión llega en el hito 3; mientras tanto deja VISION_ENABLED=false.",
+            "Instala el extra de visión con `uv sync --all-extras`.",
         )
     return Health("Visión", "ok", f"{device} accesible · OpenCV instalado")
 
@@ -589,10 +597,10 @@ def _check_camera(config: Config) -> Health:
 def _check_vision_model(config: Config) -> Health:
     model = config.vision_model
     if not model.exists():
-        # El runtime de visión aún no existe: un modelo ausente es solo un aviso.
+        status = "fail" if config.vision_enabled else "warn"
         return Health(
             "Modelo YuNet",
-            "warn",
+            status,
             f"no existe {model}",
             "Restaura models/face_detection_yunet_2023mar.onnx y su .sha256.",
         )

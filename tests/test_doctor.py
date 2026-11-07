@@ -12,6 +12,7 @@ from sirah.doctor import (
     _check_audio,
     _check_balance,
     _check_calibration,
+    _check_camera,
     _check_config,
     _check_data_dir,
     _check_llm,
@@ -328,15 +329,48 @@ def test_vision_model_checksum(tmp_path: Path) -> None:
     assert _check_vision_model(config).status == "fail"
 
 
-def test_vision_model_missing_is_a_warning_even_when_enabled(tmp_path: Path) -> None:
-    config = _config(
+def test_vision_model_missing_warns_when_disabled_and_fails_when_enabled(tmp_path: Path) -> None:
+    disabled = _config(tmp_path, VISION_MODEL=str(tmp_path / "missing.onnx"))
+    assert _check_vision_model(disabled).status == "warn"
+
+    enabled = _config(
         tmp_path,
         VISION_ENABLED="true",
         VISION_MODEL=str(tmp_path / "missing.onnx"),
     )
-    result = _check_vision_model(config)
-    assert result.status == "warn"
+    assert _check_vision_model(enabled).status == "fail"
+
+
+def test_camera_off_when_vision_is_disabled(tmp_path: Path) -> None:
+    assert _check_camera(_config(tmp_path)).status == "off"
+
+
+def test_camera_fails_when_vision_is_enabled_and_camera_is_missing(tmp_path: Path) -> None:
+    config = _config(
+        tmp_path,
+        VISION_ENABLED="true",
+        VISION_CAMERA=str(tmp_path / "no-video"),
+    )
+    result = _check_camera(config)
+    assert result.status == "fail"
     assert "no existe" in result.detail
+
+
+def test_camera_fails_when_opencv_is_missing(tmp_path: Path, monkeypatch) -> None:
+    device = tmp_path / "video0"
+    device.write_text("camara", encoding="utf-8")
+    monkeypatch.setattr("sirah.doctor.stat.S_ISCHR", lambda mode: True)
+    monkeypatch.setattr("sirah.doctor.os.access", lambda path, mode: True)
+    monkeypatch.setattr("sirah.doctor.importlib.util.find_spec", lambda name: None)
+
+    config = _config(
+        tmp_path,
+        VISION_ENABLED="true",
+        VISION_CAMERA=str(device),
+    )
+    result = _check_camera(config)
+    assert result.status == "fail"
+    assert "OpenCV" in result.detail
 
 
 def test_find_piper_ignores_fake_executable(monkeypatch) -> None:
