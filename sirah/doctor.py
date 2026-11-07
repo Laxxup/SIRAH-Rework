@@ -586,10 +586,10 @@ def _check_camera(config: Config) -> Health:
 def _check_vision_model(config: Config) -> Health:
     model = config.vision_model
     if not model.exists():
-        status = "fail" if config.vision_enabled else "warn"
+        # El runtime de visión aún no existe: un modelo ausente es solo un aviso.
         return Health(
             "Modelo YuNet",
-            status,
+            "warn",
             f"no existe {model}",
             "Restaura models/face_detection_yunet_2023mar.onnx y su .sha256.",
         )

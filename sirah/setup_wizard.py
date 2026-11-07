@@ -337,21 +337,7 @@ def run_setup(env_file: Path | None = None) -> int:
             print("conecta el ESP32 y vuelve a ejecutar setup o edita EYES_ADDRESS.")
             updates["EYES_ADDRESS"] = ""
 
-    # 3. Visión
-    print("\nVisión (cámara)")
-    if current.get("VISION_ENABLED", "").lower() in {"1", "true", "yes", "on"}:
-        print("La visión ya está activada.")
-    elif _ask_yes_no("¿Activar el seguimiento de caras al arrancar?", False):
-        cameras = detect_cameras()
-        if cameras:
-            selected = _choose("Elige la cámara", cameras, 0)
-            if selected:
-                updates["VISION_ENABLED"] = "true"
-                updates["VISION_CAMERA"] = selected
-        else:
-            print("No encontré /dev/video*. La visión queda desactivada.")
-
-    # 4. Voz
+    # 3. Voz
     print("\nVoz (Groq + Piper)")
     is_groq = is_groq_url(base)
     has_stt_key = bool(current.get("GROQ_API_KEY", "").strip()) or (is_groq and bool(effective_key))
@@ -383,7 +369,7 @@ def run_setup(env_file: Path | None = None) -> int:
         print("Si el micrófono o el altavoz no son los predeterminados, ajusta")
         print("AUDIO_INPUT_DEVICE y AUDIO_OUTPUT_DEVICE en .env.")
 
-    # 5. Persona
+    # 4. Persona
     print("\nPersona")
     settings_file = PROJECT_ROOT / "config" / "sirah.toml"
     try:
@@ -398,7 +384,7 @@ def run_setup(env_file: Path | None = None) -> int:
         else:
             print("Aviso: falta config/sirah.toml.example; se usan valores por defecto.")
 
-    # 6. Escribir
+    # 5. Escribir
     if updates:
         try:
             update_env_file(env_file, updates)

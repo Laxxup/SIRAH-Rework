@@ -309,6 +309,17 @@ def test_vision_model_checksum(tmp_path: Path) -> None:
     assert _check_vision_model(config).status == "fail"
 
 
+def test_vision_model_missing_is_a_warning_even_when_enabled(tmp_path: Path) -> None:
+    config = _config(
+        tmp_path,
+        VISION_ENABLED="true",
+        VISION_MODEL=str(tmp_path / "missing.onnx"),
+    )
+    result = _check_vision_model(config)
+    assert result.status == "warn"
+    assert "no existe" in result.detail
+
+
 def test_find_piper_ignores_fake_executable(monkeypatch) -> None:
     monkeypatch.setattr(
         "sirah.doctor.shutil.which",

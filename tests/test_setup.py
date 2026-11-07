@@ -265,6 +265,20 @@ def test_setup_clears_eyes_address_when_no_ports_and_changing(monkeypatch, tmp_p
     assert captured.get("EYES_ADDRESS") == ""
 
 
+def test_setup_does_not_touch_vision(monkeypatch, tmp_path: Path) -> None:
+    env_file, captured = _patch_setup(monkeypatch, tmp_path, ask_overrides={"Activar": True})
+    called: list[str] = []
+    monkeypatch.setattr(
+        "sirah.setup_wizard.detect_cameras",
+        lambda: called.append("camera") or [],
+    )
+
+    assert run_setup(env_file) == 0
+    assert called == []
+    assert "VISION_ENABLED" not in captured
+    assert "VISION_CAMERA" not in captured
+
+
 def test_download_voice_installs_a_verified_file(tmp_path: Path, monkeypatch) -> None:
     payload = b"modelo de voz"
     monkeypatch.setattr(
