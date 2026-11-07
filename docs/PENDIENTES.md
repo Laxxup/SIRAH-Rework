@@ -89,20 +89,22 @@ dar por buenas. No marcar como resuelto sin evidencia.
   válidas y brevedad antes de cambiar `LLM_TEMPERATURE` (0,6 actual; la ficha
   del modelo recomienda 1,0 / 0,95 / 64).
 
-## Visión (hito 3, bloqueado)
+## Visión (hito 3, autorizada)
 
-- [ ] **AGENTS.md prohíbe código de visión** ("No crear código ni experimentar
-  con ojos o visión"). No se escribió nada; hace falta que el dueño actualice
-  la regla y lo anote en `docs/DECISIONES.md`.
-- [ ] **Montaje de la cámara sin decidir** (fija o sobre el mecanismo). Sin eso
-  no se puede cerrar MOG2 ni el control de lazo.
+- [x] **Visión autorizada por el dueño (07/11/2026).** El alcance v1 es YuNet +
+  seguimiento de la cara; identidad, reconocimiento y emoción quedan fuera.
+  Registrado en `docs/DECISIONES.md` (A14).
+- [ ] **Montaje de la cámara aplazado** (fija o sobre el mecanismo). No bloquea
+  la lógica de seguimiento; la calibración se ajusta cuando exista hardware.
 - [ ] **Contrato Supervisor/Eyes sin definir.** `Supervisor` llama
   `on_state`/`on_actions`/`close`, pero la interfaz documentada es
-  `look`/`blink`/`tired`/`center`/`health`/`close`.
+  `look`/`blink`/`tired`/`center`/`health`/`close`. Unificar antes de integrar
+  ojos o visión.
 - [ ] **`make check` no puede probar YuNet** sin OpenCV en dev y una imagen de
   cara con licencia. Añadir OpenCV a dev sigue pendiente de aprobación.
 - [ ] **`models/` es intocable.** Palma (3,9 MB), mano (4,1 MB) y SFace
-  (38,7 MB) exigirían aprobación del dueño, licencia y checksum.
+  (38,7 MB) exigirían aprobación del dueño, licencia y checksum. SFace no entra
+  en v1.
 - [ ] **Saccades incompatibles con 15 Hz y paso 0,06.** A 15 Hz, 0,06/tick es
   0,9 u/s; un movimiento de 0,3 u tarda ~0,47 s, no 80–250 ms. Decidir
   "seguimiento suave" o cambiar ritmo/paso.
