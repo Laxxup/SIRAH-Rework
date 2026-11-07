@@ -294,6 +294,25 @@ def test_serial_rejects_regular_file(tmp_path: Path) -> None:
     assert "caracteres" in result.detail
 
 
+def test_serial_missing_does_not_advertise_a_missing_command(tmp_path: Path) -> None:
+    missing = _config(tmp_path, EYES_ADDRESS=f"serial://{tmp_path}/no-existe")
+    result = _check_serial(missing)
+    assert "sirah eyes test" not in (result.fix or "")
+    assert "PENDIENTES.md" in (result.fix or "")
+
+
+def test_serial_ready_does_not_advertise_a_missing_command(tmp_path, monkeypatch) -> None:
+    device = tmp_path / "tty-falso"
+    device.write_text("no soy un puerto", encoding="utf-8")
+    monkeypatch.setattr("sirah.doctor.stat.S_ISCHR", lambda mode: True)
+    monkeypatch.setattr("sirah.doctor.os.access", lambda path, mode: True)
+    monkeypatch.setattr("sirah.doctor._service_active", lambda name: False)
+
+    result = _check_serial(_config(tmp_path, EYES_ADDRESS=f"serial://{device}"))
+    assert "sirah eyes test" not in result.detail
+    assert "PENDIENTES.md" in result.detail
+
+
 def test_vision_model_checksum(tmp_path: Path) -> None:
     model = tmp_path / "model.onnx"
     model.write_bytes(b"modelo de prueba")

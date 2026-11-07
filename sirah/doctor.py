@@ -477,8 +477,8 @@ def _check_serial(config: Config) -> Health:
             "Ojos",
             "warn",
             f"configurados en {device}, pero no está conectado",
-            "Conecta el ESP32; SIRAH reintenta solo cuando aparezca. La prueba real es "
-            "`sirah eyes test` (hito 2).",
+            "Conecta el ESP32. La prueba de hardware aún no está implementada; "
+            "ver docs/PENDIENTES.md.",
         )
 
     try:
@@ -527,7 +527,10 @@ def _check_serial(config: Config) -> Health:
                 f"desactívalo si no lo usas (`sudo systemctl disable --now {service}`)"
             )
 
-    detail = f"{device} · grupo {group} · handshake en `sirah eyes test` (hito 2)"
+    detail = (
+        f"{device} · grupo {group} · prueba de hardware aún no implementada "
+        "(ver docs/PENDIENTES.md)"
+    )
     if notes:
         return Health("Ojos", "warn", f"{detail} · {'; '.join(notes)}")
     return Health("Ojos", "ok", detail)

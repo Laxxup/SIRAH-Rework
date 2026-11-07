@@ -431,7 +431,7 @@ Reglas:
 | `sirah voice --check` | 4 | Graba 3 s y muestra RMS y VAD |
 | `sirah setup` | 0 | Crea `.env`, detecta serial/cámara/audio, ofrece descargar la voz |
 | `sirah doctor` | 0 | Diagnóstico de cada capa con solución exacta (`--offline` evita red) |
-| `sirah eyes test` | 2 | Prueba explícita de ojos; avisa y pide confirmación |
+| — | 2 | Prueba de hardware aún no implementada, ver `docs/PENDIENTES.md` |
 | `sirah test-hardware` | 6 | Autotest de ojos, cámara, micrófono y altavoz; nunca automático |
 | `sirah --panel` | 7 | Chat + panel web en el mismo proceso |
 | `sirah update` | 8 | Actualiza desde una etiqueta git, sincroniza y revierte si falla |
@@ -496,8 +496,8 @@ Pruebas manuales por hito (el equipo las ejecuta y las confirma):
 
 - **0:** `uv sync`, `sirah setup`, `sirah doctor`; mensajes claros.
 - **1:** conversación de 10 turnos; respuesta en streaming; cambiar de persona.
-- **2:** `sirah eyes test` con aviso; centro, parpadeo, cansancio y mirada;
-  desenchufar y reenchufar el USB con SIRAH corriendo.
+- **2:** prueba de hardware aún no implementada, ver `docs/PENDIENTES.md`; centro,
+  parpadeo, cansancio y mirada; desenchufar y reenchufar el USB con SIRAH corriendo.
 - **3:** cara a la izquierda/derecha/arriba/abajo; sin cara vuelve al centro.
 - **4:** `sirah voice --check`; tres turnos hablados; SIRAH no se oye a sí
   misma; cortar internet y comprobar el aviso; Ctrl-C y `pgrep -a
